@@ -4,7 +4,7 @@ Programma Python che monitora i prezzi su vari siti e-commerce ogni 30 minuti e 
 
 ## ✨ Funzionalità
 
-- 🔍 Controllo automatico dei prezzi ogni 30 minuti (configurabile)
+- 🔍 Controllo automatico dei prezzi ogni ora (configurabile)
 - 📧 Invio email HTML con le offerte trovate
 - 🎯 Soglia sconto configurabile (default: 90%)
 - 🌐 Supporto multi-sito (Amazon, eBay, e altri)
@@ -91,8 +91,8 @@ Nel campo `products` aggiungi ogni prodotto con:
 
 | Parametro | Descrizione | Default |
 |-----------|-------------|---------|
-| `check_interval_minutes` | Intervallo controlli in minuti | 30 |
-| `discount_threshold` | Soglia sconto per alert (%) | 90 |
+| `check_interval_minutes` | Intervallo controlli in minuti | 60 |
+| `discount_threshold` | Soglia sconto per alert (%) | 70 |
 
 ## ▶️ Utilizzo
 
@@ -102,8 +102,8 @@ python main.py
 
 Il programma:
 1. Esegue subito un primo controllo
-2. Poi controlla automaticamente ogni 30 minuti
-3. Invia un'email quando trova offerte con sconto ≥ 90%
+2. Poi controlla automaticamente ogni ora
+3. Invia un'email quando trova offerte con sconto ≥ 70%
 
 Per fermare: `Ctrl+C`
 

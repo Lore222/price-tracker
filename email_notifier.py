@@ -92,7 +92,7 @@ def send_alert_email(config: Dict, deals: List[Dict]) -> bool:
 
     body += """
         <hr style="border: 1px solid #eee;">
-        <p style="text-align: center; color: #999; font-size: 12px;">Monitoraggio prezzi automatico - Controllo ogni 30 minuti</p>
+        <p style="text-align: center; color: #999; font-size: 12px;">Monitoraggio prezzi automatico - Controllo ogni ora</p>
     </div>
 </body>
 </html>

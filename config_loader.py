@@ -29,7 +29,7 @@ def load_config(config_path: str = "config.json") -> Dict[str, Any]:
     else:
         config = {
             "email": {},
-            "check_interval_minutes": 30,
+            "check_interval_minutes": 60,
             "discount_threshold": 70,
             "products": [],
         }
@@ -48,7 +48,7 @@ def load_config(config_path: str = "config.json") -> Dict[str, Any]:
         config["discount_threshold"] = float(threshold)
 
     config.setdefault("email", {})
-    config.setdefault("check_interval_minutes", 30)
+    config.setdefault("check_interval_minutes", 60)
     config.setdefault("discount_threshold", 70)
     config.setdefault("products", [])
 

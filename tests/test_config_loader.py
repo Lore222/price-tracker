@@ -25,7 +25,7 @@ class ConfigLoaderTests(unittest.TestCase):
 
             self.assertEqual(config["email"]["smtp_server"], "smtp.example.com")
             self.assertEqual(config["products"], [])
-            self.assertEqual(config["check_interval_minutes"], 30)
+            self.assertEqual(config["check_interval_minutes"], 60)
 
 
 if __name__ == "__main__":
