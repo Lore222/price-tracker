@@ -6,11 +6,15 @@ from typing import Dict, List
 
 
 def _create_ssl_context():
-    """Crea un contesto SSL permissive per compatibilità con vari server."""
-    context = ssl.create_default_context()
-    context.check_hostname = False
-    context.verify_mode = ssl.CERT_NONE
-    return context
+    """Crea un contesto SSL sicuro, con fallback per server problematici."""
+    try:
+        context = ssl.create_default_context()
+        return context
+    except ssl.SSLError:
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        return context
 
 
 def _connect_smtp(email_config: Dict):

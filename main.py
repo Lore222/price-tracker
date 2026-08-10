@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import logging
 import os
 import sys
 import time
@@ -10,12 +11,24 @@ from config_loader import load_config
 from email_notifier import send_alert_email
 from scraper import check_all_products
 
+# Configurazione logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%d/%m/%Y %H:%M:%S",
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler("price_tracker.log", encoding="utf-8"),
+    ],
+)
+logger = logging.getLogger(__name__)
+
 
 def run_check(config):
     """Esegue un ciclo di controllo prezzi."""
-    print(f"\n{'='*60}")
-    print(f"🔍 Controllo prezzi - {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
-    print(f"{'='*60}")
+    logger.info("=" * 60)
+    logger.info("🔍 Controllo prezzi - %s", datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+    logger.info("=" * 60)
 
     results = check_all_products(config["products"])
 
@@ -31,20 +44,21 @@ def run_check(config):
     # Mostra riepilogo
     for r in results:
         if r.get("error"):
-            print(f"  ⚠️  {r['name']}: {r['error']}")
+            logger.warning("⚠️  %s: %s", r["name"], r["error"])
         else:
             discount = r.get("discount_percent")
             if discount is not None:
-                print(f"  📦 {r['name']}: €{r['current_price']} "
-                      f"(originale €{r['original_price']}) - Sconto {discount}%")
+                logger.info("📦 %s: €%s (originale €%s) - Sconto %s%%",
+                            r["name"], r["current_price"], r["original_price"], discount)
             else:
-                print(f"  📦 {r['name']}: €{r['current_price']} (prezzo originale non disponibile)")
+                logger.info("📦 %s: €%s (prezzo originale non disponibile)",
+                            r["name"], r["current_price"])
 
     if deals:
-        print(f"\n  🎯 Trovate {len(deals)} offerte con sconto ≥ {threshold}%!")
+        logger.info("🎯 Trovate %d offerte con sconto ≥ %s%%!", len(deals), threshold)
         send_alert_email(config, deals)
     else:
-        print(f"\n  😴 Nessuna offerta con sconto ≥ {threshold}% in questo momento.")
+        logger.info("😴 Nessuna offerta con sconto ≥ %s%% in questo momento.", threshold)
 
 
 def should_run_continuously(args, env):
@@ -66,26 +80,26 @@ def main():
     try:
         config = load_config()
     except (FileNotFoundError, ValueError) as e:
-        print(f"❌ Errore configurazione: {e}")
+        logger.error("❌ Errore configurazione: %s", e)
         sys.exit(1)
 
     interval = config["check_interval_minutes"]
     continuous = should_run_continuously(args, os.environ)
 
-    print(f"🚀 Avvio monitoraggio prezzi")
-    print(f"   Modalità: {'loop continuo' if continuous else 'esecuzione singola'}")
-    print(f"   Intervallo: ogni {interval} minuti")
-    print(f"   Soglia sconto: {config['discount_threshold']}%")
-    print(f"   Prodotti monitorati: {len(config['products'])}")
+    logger.info("🚀 Avvio monitoraggio prezzi")
+    logger.info("   Modalità: %s", "loop continuo" if continuous else "esecuzione singola")
+    logger.info("   Intervallo: ogni %d minuti", interval)
+    logger.info("   Soglia sconto: %s%%", config["discount_threshold"])
+    logger.info("   Prodotti monitorati: %d", len(config["products"]))
     if continuous:
-        print(f"   Premi Ctrl+C per fermare\n")
+        logger.info("   Premi Ctrl+C per fermare\n")
     else:
-        print()
+        logger.info("")
 
     run_check(config)
 
     if not continuous:
-        print("\n✅ Esecuzione singola completata.")
+        logger.info("✅ Esecuzione singola completata.")
         return
 
     schedule.every(interval).minutes.do(run_check, config)
@@ -95,7 +109,7 @@ def main():
             schedule.run_pending()
             time.sleep(1)
     except KeyboardInterrupt:
-        print("\n👋 Monitoraggio fermato.")
+        logger.info("👋 Monitoraggio fermato.")
 
 
 if __name__ == "__main__":

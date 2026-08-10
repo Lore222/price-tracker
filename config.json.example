@@ -1,0 +1,27 @@
+{
+  "email": {
+    "smtp_server": "smtp.gmail.com",
+    "smtp_port": 587,
+    "smtp_port_ssl": 465,
+    "smtp_port_plain": 25,
+    "sender_email": "IL_TUO_EMAIL@gmail.com",
+    "sender_password": "LA_TUA_PASSWORD_APP",
+    "recipient_email": "DESTINATARIO@example.com"
+  },
+  "check_interval_minutes": 60,
+  "discount_threshold": 70,
+  "products": [
+    {
+      "name": "iPhone 15",
+      "url": "https://www.amazon.it/dp/B0CHX2F5QT",
+      "selector_price": "span.a-price-whole",
+      "selector_original_price": "span.a-text-price span.a-offscreen"
+    },
+    {
+      "name": "PlayStation 5",
+      "url": "https://www.ebay.it/itm/ESEMPIO_ID",
+      "selector_price": "span.ux-textspans--BOLD",
+      "selector_original_price": "span.ux-textspans--STRIKETHROUGH"
+    }
+  ]
+}
