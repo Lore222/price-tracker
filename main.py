@@ -77,6 +77,7 @@ def should_run_continuously(args, env):
 def parse_args():
     parser = argparse.ArgumentParser(description="Price Tracker")
     parser.add_argument("--loop", action="store_true", help="Esegue il monitoraggio in loop continuo")
+    parser.add_argument("--summary", action="store_true", help="Esegue solo il riepilogo prezzi serale")
     return parser.parse_args()
 
 
@@ -88,6 +89,11 @@ def main():
     except (FileNotFoundError, ValueError) as e:
         logger.error("❌ Errore configurazione: %s", e)
         sys.exit(1)
+
+    # Modalità riepilogo serale: esegue solo il riepilogo e termina
+    if args.summary:
+        run_summary(config)
+        return
 
     interval = config["check_interval_minutes"]
     continuous = should_run_continuously(args, os.environ)
