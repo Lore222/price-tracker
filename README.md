@@ -1,12 +1,12 @@
 # 🛒 Price Tracker - Monitoraggio Offerte E-commerce
 
-Programma Python che monitora i prezzi su vari siti e-commerce ogni 30 minuti e invia un messaggio Telegram di alert quando trova prodotti con sconto superiore al 90%.
+Programma Python che monitora i prezzi su vari siti e-commerce ogni 60 minuti e invia un messaggio Telegram di alert quando trova prodotti con sconto superiore al 70%.
 
 ## ✨ Funzionalità
 
 - 🔍 Controllo automatico dei prezzi ogni ora (configurabile)
 - 📨 Invio messaggi Telegram con le offerte trovate
-- 🎯 Soglia sconto configurabile (default: 90%)
+- 🎯 Soglia sconto configurabile (default: 70%)
 - 🌐 Supporto multi-sito (Amazon, eBay, e altri)
 - 📊 Calcolo automatico della percentuale di sconto
 - 🛡️ Gestione errori di rete e parsing
