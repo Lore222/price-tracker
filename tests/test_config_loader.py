@@ -15,28 +15,28 @@ class ConfigLoaderTests(unittest.TestCase):
             with patch.dict(
                 os.environ,
                 {
-                    "SMTP_SERVER": "smtp.example.com",
-                    "SENDER_EMAIL": "sender@example.com",
-                    "SENDER_PASSWORD": "secret",
-                    "RECIPIENT_EMAIL": "recipient@example.com",
+                    "TELEGRAM_BOT_TOKEN": "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
+                    "TELEGRAM_CHAT_ID": "169943050",
                 },
                 clear=False,
             ):
                 config = load_config(config_path)
 
-            self.assertEqual(config["email"]["smtp_server"], "smtp.example.com")
+            self.assertEqual(
+                config["telegram"]["bot_token"], "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+            )
+            self.assertEqual(config["telegram"]["chat_id"], "169943050")
             self.assertEqual(config["products"], [])
             self.assertEqual(config["check_interval_minutes"], 60)
 
-    def test_load_config_validates_email_when_products_exist(self):
-        """Test che la validazione email fallisca se mancano campi con prodotti configurati."""
+    def test_load_config_validates_telegram_when_products_exist(self):
+        """Test che la validazione Telegram fallisca se mancano campi con prodotti configurati."""
         with tempfile.TemporaryDirectory() as tmpdir:
             config_path = os.path.join(tmpdir, "config.json")
             config_data = {
-                "email": {
-                    "smtp_server": "smtp.example.com",
-                    "sender_email": "sender@example.com",
-                    # manca sender_password e recipient_email
+                "telegram": {
+                    "bot_token": "123456:ABC",
+                    # manca chat_id
                 },
                 "products": [
                     {"name": "Test", "url": "https://example.com"}
@@ -48,18 +48,16 @@ class ConfigLoaderTests(unittest.TestCase):
             with self.assertRaises(ValueError) as ctx:
                 load_config(config_path)
 
-            self.assertIn("Configurazione email incompleta", str(ctx.exception))
+            self.assertIn("Configurazione Telegram incompleta", str(ctx.exception))
 
-    def test_load_config_valid_email_with_products(self):
-        """Test che una config email completa con prodotti passi la validazione."""
+    def test_load_config_valid_telegram_with_products(self):
+        """Test che una config Telegram completa con prodotti passi la validazione."""
         with tempfile.TemporaryDirectory() as tmpdir:
             config_path = os.path.join(tmpdir, "config.json")
             config_data = {
-                "email": {
-                    "smtp_server": "smtp.example.com",
-                    "sender_email": "sender@example.com",
-                    "sender_password": "secret",
-                    "recipient_email": "recipient@example.com",
+                "telegram": {
+                    "bot_token": "123456:ABC",
+                    "chat_id": "169943050",
                 },
                 "products": [
                     {"name": "Test", "url": "https://example.com"}
@@ -69,7 +67,8 @@ class ConfigLoaderTests(unittest.TestCase):
                 json.dump(config_data, f)
 
             config = load_config(config_path)
-            self.assertEqual(config["email"]["smtp_server"], "smtp.example.com")
+            self.assertEqual(config["telegram"]["bot_token"], "123456:ABC")
+            self.assertEqual(config["telegram"]["chat_id"], "169943050")
             self.assertEqual(len(config["products"]), 1)
 
     def test_load_config_invalid_env_int(self):
@@ -102,26 +101,27 @@ class ConfigLoaderTests(unittest.TestCase):
 
             self.assertIn("DISCOUNT_THRESHOLD", str(ctx.exception))
 
-    def test_load_config_invalid_smtp_port(self):
-        """Test che SMTP_PORT non numerico sollevi ValueError."""
+    def test_load_config_validates_telegram_env_when_products_exist(self):
+        """Test che la validazione Telegram fallisca se le env var sono incomplete con prodotti."""
         with tempfile.TemporaryDirectory() as tmpdir:
             config_path = os.path.join(tmpdir, "config.json")
+            config_data = {
+                "products": [
+                    {"name": "Test", "url": "https://example.com"}
+                ],
+            }
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(config_data, f)
 
             with patch.dict(
                 os.environ,
-                {
-                    "SMTP_SERVER": "smtp.example.com",
-                    "SMTP_PORT": "not-a-number",
-                    "SENDER_EMAIL": "sender@example.com",
-                    "SENDER_PASSWORD": "secret",
-                    "RECIPIENT_EMAIL": "recipient@example.com",
-                },
+                {"TELEGRAM_BOT_TOKEN": "123456:ABC"},  # manca chat_id
                 clear=False,
             ):
                 with self.assertRaises(ValueError) as ctx:
                     load_config(config_path)
 
-            self.assertIn("SMTP_PORT", str(ctx.exception))
+            self.assertIn("chat id", str(ctx.exception))
 
     def test_load_config_products_not_list(self):
         """Test che products non lista sollevi ValueError."""

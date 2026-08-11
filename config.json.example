@@ -1,12 +1,7 @@
 {
-  "email": {
-    "smtp_server": "smtp.gmail.com",
-    "smtp_port": 587,
-    "smtp_port_ssl": 465,
-    "smtp_port_plain": 25,
-    "sender_email": "IL_TUO_EMAIL@gmail.com",
-    "sender_password": "LA_TUA_PASSWORD_APP",
-    "recipient_email": "DESTINATARIO@example.com"
+  "telegram": {
+    "bot_token": "123456789:AAEsempioTokenDelBot",
+    "chat_id": "123456789"
   },
   "check_interval_minutes": 60,
   "discount_threshold": 70,

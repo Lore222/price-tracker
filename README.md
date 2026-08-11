@@ -1,11 +1,11 @@
 # 🛒 Price Tracker - Monitoraggio Offerte E-commerce
 
-Programma Python che monitora i prezzi su vari siti e-commerce ogni 30 minuti e invia un'email di alert quando trova prodotti con sconto superiore al 90%.
+Programma Python che monitora i prezzi su vari siti e-commerce ogni 30 minuti e invia un messaggio Telegram di alert quando trova prodotti con sconto superiore al 90%.
 
 ## ✨ Funzionalità
 
 - 🔍 Controllo automatico dei prezzi ogni ora (configurabile)
-- 📧 Invio email HTML con le offerte trovate
+- 📨 Invio messaggi Telegram con le offerte trovate
 - 🎯 Soglia sconto configurabile (default: 90%)
 - 🌐 Supporto multi-sito (Amazon, eBay, e altri)
 - 📊 Calcolo automatico della percentuale di sconto
@@ -14,7 +14,7 @@ Programma Python che monitora i prezzi su vari siti e-commerce ogni 30 minuti e 
 ## 📋 Requisiti
 
 - Python 3.8+
-- Un account email con SMTP (es. Gmail con App Password)
+- Un bot Telegram con il suo token e un chat ID (vedi sotto)
 
 ## 🚀 Installazione
 
@@ -25,36 +25,25 @@ pip install -r requirements.txt
 
 ## ⚙️ Configurazione
 
-### 1. Configurare l'email (config.json)
+### 1. Configurare Telegram (config.json)
 
-**Per Virgilio/Tiscali (Italiaonline):**
+Per ricevere gli alert su Telegram devi creare un bot e ottenere il tuo chat ID:
+
+1. Su Telegram apri il canale con **@BotFather** e usa il comando `/newbot` per creare il bot
+2. BotFather ti fornirà un **bot token** (formato `123456789:AA...`)
+3. Avvia una conversazione con il tuo bot e inviagli un messaggio
+4. Ottieni il tuo **chat ID** (puoi usare ad esempio l'endpoint `getUpdates` dell'API)
+
+Inserisci i dati nel campo `telegram` del file `config.json`:
+
 ```json
-"email": {
-    "smtp_server": "smtp.virgilio.it",
-    "smtp_port": 587,
-    "smtp_port_ssl": 465,
-    "smtp_port_plain": 25,
-    "sender_email": "IL_TUO_EMAIL@virgilio.it",
-    "sender_password": "LA_TUA_PASSWORD",
-    "recipient_email": "DESTINATARIO@example.com"
+"telegram": {
+    "bot_token": "123456789:AAEsempioTokenDelBot",
+    "chat_id": "123456789"
 }
 ```
 
-**Per Gmail:**
-1. Attiva la verifica in due passaggi su [myaccount.google.com](https://myaccount.google.com)
-2. Vai su Sicurezza → Password per le app
-3. Genera una password per l'app "Mail"
-4. Inserisci i dati nel file `config.json`:
-
-```json
-"email": {
-    "smtp_server": "smtp.gmail.com",
-    "smtp_port": 587,
-    "sender_email": "IL_TUO_EMAIL@gmail.com",
-    "sender_password": "LA_TUA_PASSWORD_APP",
-    "recipient_email": "DESTINATARIO@example.com"
-}
-```
+> 💡 In alternativa puoi impostarli tramite le variabili d'ambiente `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID`, che hanno la precedenza sui valori del file.
 
 
 ### 2. Aggiungere i prodotti da monitorare
@@ -103,7 +92,7 @@ python main.py
 Il programma:
 1. Esegue subito un primo controllo
 2. Poi controlla automaticamente ogni ora
-3. Invia un'email quando trova offerte con sconto ≥ 70%
+3. Invia un messaggio Telegram quando trova offerte con sconto ≥ 70%
 
 Per fermare: `Ctrl+C`
 
@@ -112,10 +101,10 @@ Per fermare: `Ctrl+C`
 ```
 price-tracker/
 ├── main.py              # Punto di ingresso con scheduler
-├── config.json          # Configurazione email e prodotti
+├── config.json          # Configurazione Telegram e prodotti
 ├── config_loader.py     # Caricamento e validazione configurazione
 ├── scraper.py           # Estrazione prezzi dai siti
-├── email_notifier.py    # Invio email di alert
+├── telegram_notifier.py # Invio messaggi Telegram di alert
 └── requirements.txt     # Dipendenze Python
 ```
 
@@ -124,10 +113,10 @@ price-tracker/
 - **Rispetta i siti web**: il programma attende 2 secondi tra una richiesta e l'altra
 - **Selettori CSS**: possono cambiare se il sito aggiorna il layout, aggiorna i selettori in `config.json`
 - **Anti-bot**: alcuni siti potrebbero bloccare lo scraping, in tal caso usa un User-Agent diverso o un proxy
-- **Gmail**: usa una App Password, non la password normale dell'account
+- **Telegram**: il bot token è un segreto, non condividerlo pubblicamente (il file `config.json` è già in `.gitignore`)
 
 ## 🔒 Privacy
 
-- Le credenziali email sono salvate localmente in `config.json`
+- Il bot token Telegram è salvato localmente in `config.json` (in `.gitignore`)
 - Nessun dato viene inviato a terze parti
 - Le richieste vanno direttamente ai siti e-commerce configurati

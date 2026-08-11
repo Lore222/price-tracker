@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 
 def _safe_int_env(var_name: str, default: int) -> int:
@@ -27,37 +27,30 @@ def _safe_float_env(var_name: str, default: float) -> float:
 
 def _get_env_config() -> Dict[str, Any]:
     """Restituisce una configurazione minima dai valori d'ambiente, se presenti."""
-    email_env = {
-        "smtp_server": os.getenv("SMTP_SERVER"),
-        "smtp_port": _safe_int_env("SMTP_PORT", 587),
-        "smtp_port_ssl": _safe_int_env("SMTP_PORT_SSL", 465),
-        "smtp_port_plain": _safe_int_env("SMTP_PORT_PLAIN", 25),
-        "sender_email": os.getenv("SENDER_EMAIL"),
-        "sender_password": os.getenv("SENDER_PASSWORD"),
-        "recipient_email": os.getenv("RECIPIENT_EMAIL"),
+    telegram_env = {
+        "bot_token": os.getenv("TELEGRAM_BOT_TOKEN"),
+        "chat_id": os.getenv("TELEGRAM_CHAT_ID"),
     }
 
-    if not any(email_env.values()):
+    if not any(telegram_env.values()):
         return {}
 
-    return {"email": email_env}
+    return {"telegram": telegram_env}
 
 
-def _validate_email_config(email_config: Dict[str, Any]) -> None:
-    """Valida che la configurazione email abbia tutti i campi obbligatori."""
+def _validate_telegram_config(telegram_config: Dict[str, Any]) -> None:
+    """Valida che la configurazione Telegram abbia i campi obbligatori."""
     required_fields = {
-        "smtp_server": "server SMTP",
-        "sender_email": "email mittente",
-        "sender_password": "password mittente",
-        "recipient_email": "email destinatario",
+        "bot_token": "bot token",
+        "chat_id": "chat id",
     }
     missing = []
     for field, label in required_fields.items():
-        if not email_config.get(field):
+        if not telegram_config.get(field):
             missing.append(label)
 
     if missing:
-        raise ValueError(f"Configurazione email incompleta: mancano i seguenti campi: {', '.join(missing)}")
+        raise ValueError(f"Configurazione Telegram incompleta: mancano i seguenti campi: {', '.join(missing)}")
 
 
 def load_config(config_path: str = "config.json") -> Dict[str, Any]:
@@ -67,7 +60,7 @@ def load_config(config_path: str = "config.json") -> Dict[str, Any]:
             config = json.load(f)
     else:
         config = {
-            "email": {},
+            "telegram": {},
             "check_interval_minutes": 60,
             "discount_threshold": 70,
             "products": [],
@@ -75,8 +68,8 @@ def load_config(config_path: str = "config.json") -> Dict[str, Any]:
 
     env_config = _get_env_config()
     if env_config:
-        config.setdefault("email", {})
-        config["email"].update({k: v for k, v in env_config["email"].items() if v is not None})
+        config.setdefault("telegram", {})
+        config["telegram"].update({k: v for k, v in env_config["telegram"].items() if v is not None})
 
     interval = os.getenv("CHECK_INTERVAL_MINUTES")
     if interval is not None:
@@ -86,7 +79,7 @@ def load_config(config_path: str = "config.json") -> Dict[str, Any]:
     if threshold is not None:
         config["discount_threshold"] = _safe_float_env("DISCOUNT_THRESHOLD", 70.0)
 
-    config.setdefault("email", {})
+    config.setdefault("telegram", {})
     config.setdefault("check_interval_minutes", 60)
     config.setdefault("discount_threshold", 70)
     config.setdefault("products", [])
@@ -98,8 +91,8 @@ def load_config(config_path: str = "config.json") -> Dict[str, Any]:
         if "name" not in product or "url" not in product:
             raise ValueError("Ogni prodotto deve avere 'name' e 'url'")
 
-    # Valida email solo se ci sono prodotti configurati (se non ci sono prodotti, non serve email)
+    # Valida Telegram solo se ci sono prodotti configurati (se non ci sono prodotti, non serve notificare)
     if config["products"]:
-        _validate_email_config(config["email"])
+        _validate_telegram_config(config["telegram"])
 
     return config

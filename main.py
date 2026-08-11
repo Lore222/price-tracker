@@ -8,7 +8,7 @@ import time
 import schedule
 
 from config_loader import load_config
-from email_notifier import send_alert_email
+from telegram_notifier import send_telegram_alert
 from scraper import check_all_products
 
 # Configurazione logging
@@ -56,7 +56,7 @@ def run_check(config):
 
     if deals:
         logger.info("🎯 Trovate %d offerte con sconto ≥ %s%%!", len(deals), threshold)
-        send_alert_email(config, deals)
+        send_telegram_alert(config, deals)
     else:
         logger.info("😴 Nessuna offerta con sconto ≥ %s%% in questo momento.", threshold)
 
