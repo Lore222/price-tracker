@@ -1,20 +1,25 @@
 # 🛒 Price Tracker - Monitoraggio Offerte E-commerce
 
-Programma Python che monitora i prezzi su vari siti e-commerce ogni 60 minuti e invia un messaggio Telegram di alert quando trova prodotti con sconto superiore al 70%.
+Programma Python che monitora i prezzi su vari siti e-commerce e invia messaggi Telegram:
+- **Alert orario**: quando trova prodotti con sconto superiore alla soglia configurata
+- **Riepilogo giornaliero alle 20:00**: resoconto di tutti i prezzi, anche se nessun prodotto ha raggiunto lo sconto desiderato
 
 ## ✨ Funzionalità
 
 - 🔍 Controllo automatico dei prezzi ogni ora (configurabile)
-- 📨 Invio messaggi Telegram con le offerte trovate
+- 📨 Invio messaggi Telegram con le offerte trovate (solo se sconto ≥ soglia)
+- 🗓️ Riepilogo prezzi giornaliero alle 20:00 via GitHub Actions (sempre inviato)
 - 🎯 Soglia sconto configurabile (default: 70%)
 - 🌐 Supporto multi-sito (Amazon, eBay, e altri)
 - 📊 Calcolo automatico della percentuale di sconto
 - 🛡️ Gestione errori di rete e parsing
+- 🤖 Automazione completa con GitHub Actions (nessun processo locale necessario)
 
 ## 📋 Requisiti
 
 - Python 3.8+
 - Un bot Telegram con il suo token e un chat ID (vedi sotto)
+- (Opzionale) Un repository GitHub per l'automazione con GitHub Actions
 
 ## 🚀 Installazione
 
@@ -44,7 +49,6 @@ Inserisci i dati nel campo `telegram` del file `config.json`:
 ```
 
 > 💡 In alternativa puoi impostarli tramite le variabili d'ambiente `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID`, che hanno la precedenza sui valori del file.
-
 
 ### 2. Aggiungere i prodotti da monitorare
 
@@ -85,27 +89,50 @@ Nel campo `products` aggiungi ogni prodotto con:
 
 ## ▶️ Utilizzo
 
+### Esecuzione locale
+
 ```bash
+# Controllo singolo
 python main.py
+
+# Monitoraggio continuo (controlli periodici + riepilogo alle 20:00)
+python main.py --loop
+
+# Solo riepilogo serale (invia il resoconto e termina)
+python main.py --summary
 ```
 
-Il programma:
-1. Esegue subito un primo controllo
-2. Poi controlla automaticamente ogni ora
-3. Invia un messaggio Telegram quando trova offerte con sconto ≥ 70%
+### Automazione con GitHub Actions (consigliata)
 
-Per fermare: `Ctrl+C`
+Il progetto include due workflow GitHub Actions che funzionano senza bisogno di tenere il computer acceso:
+
+| Workflow | Schedule | Funzione |
+|----------|----------|----------|
+| `Price Tracker` | Ogni ora | Controlla i prezzi e invia alert Telegram solo se sconto ≥ soglia |
+| `Daily Price Summary` | Ogni giorno alle 20:00 (18:00 UTC) | Invia il riepilogo di tutti i prezzi, anche senza sconto |
+
+**Setup su GitHub:**
+1. Crea un repository su GitHub e pusha il progetto
+2. Aggiungi i secrets del repository:
+   - `TELEGRAM_BOT_TOKEN` → il token del tuo bot
+   - `TELEGRAM_CHAT_ID` → il tuo chat ID
+3. I workflow si attivano automaticamente
+
+> ⚠️ **Nota**: su GitHub Actions la configurazione viene letta dalle variabili d'ambiente (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`), non dal file `config.json`. I prodotti da monitorare vanno configurati nel file `config.json` presente nel repository.
 
 ## 📁 Struttura del progetto
 
 ```
 price-tracker/
-├── main.py              # Punto di ingresso con scheduler
-├── config.json          # Configurazione Telegram e prodotti
-├── config_loader.py     # Caricamento e validazione configurazione
-├── scraper.py           # Estrazione prezzi dai siti
-├── telegram_notifier.py # Invio messaggi Telegram di alert
-└── requirements.txt     # Dipendenze Python
+├── main.py                    # Punto di ingresso con scheduler
+├── config.json                # Configurazione Telegram e prodotti
+├── config_loader.py           # Caricamento e validazione configurazione
+├── scraper.py                 # Estrazione prezzi dai siti
+├── telegram_notifier.py       # Invio messaggi Telegram di alert e riepilogo
+├── requirements.txt           # Dipendenze Python
+└── .github/workflows/
+    ├── price-tracker.yml      # Workflow orario (alert sconti)
+    └── daily-summary.yml      # Workflow giornaliero alle 20:00 (riepilogo)
 ```
 
 ## ⚠️ Note importanti
@@ -114,9 +141,11 @@ price-tracker/
 - **Selettori CSS**: possono cambiare se il sito aggiorna il layout, aggiorna i selettori in `config.json`
 - **Anti-bot**: alcuni siti potrebbero bloccare lo scraping, in tal caso usa un User-Agent diverso o un proxy
 - **Telegram**: il bot token è un segreto, non condividerlo pubblicamente (il file `config.json` è già in `.gitignore`)
+- **GitHub Actions**: i cron job usano il fuso orario UTC. Il riepilogo delle 20:00 italiane corrisponde a `0 18 * * *` (18:00 UTC). In estate (CEST) l'Italia è UTC+2, in inverno (CET) UTC+1 — regola il cron se necessario.
 
 ## 🔒 Privacy
 
 - Il bot token Telegram è salvato localmente in `config.json` (in `.gitignore`)
+- Su GitHub Actions il token è salvato come secret del repository (mai esposto nei log)
 - Nessun dato viene inviato a terze parti
 - Le richieste vanno direttamente ai siti e-commerce configurati
