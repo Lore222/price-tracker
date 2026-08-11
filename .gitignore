@@ -7,3 +7,4 @@ __pycache__/
 price_tracker.log
 config.json
 .env
+.DS_Store

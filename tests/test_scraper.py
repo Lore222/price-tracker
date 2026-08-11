@@ -118,6 +118,20 @@ class ScraperParsingTests(unittest.TestCase):
         self.assertIsNone(data["original_price"])
         self.assertIsNone(data["discount_percent"])
 
+    def test_extract_price_data_single_fallback_price_sets_only_current(self):
+        """Test che un solo prezzo fallback venga usato solo come prezzo attuale."""
+        html = "<html><body><div>Prezzo: 649,00€</div></body></html>"
+
+        data = extract_price_data_from_html(
+            html,
+            ["#missing-price"],
+            ["#missing-original"],
+        )
+
+        self.assertEqual(data["current_price"], 649.0)
+        self.assertIsNone(data["original_price"])
+        self.assertIsNone(data["discount_percent"])
+
     def test_parse_price_italian_format(self):
         """Test parsing formato italiano (1.234,56)."""
         self.assertEqual(_parse_price("1.234,56"), 1234.56)

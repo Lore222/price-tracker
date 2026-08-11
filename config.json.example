@@ -17,6 +17,24 @@
       "url": "https://www.ebay.it/itm/ESEMPIO_ID",
       "selector_price": "span.ux-textspans--BOLD",
       "selector_original_price": "span.ux-textspans--STRIKETHROUGH"
+    },
+    {
+      "name": "Dreame Aqua10 Roller Complete",
+      "url": "https://www.amazon.it/dreame-Aqua10-Roller-Complete-Aspirapolvere/dp/B0FHHYQ58Q/ref=sr_1_1_sspa?__mk_it_IT=ÅMÅŽÕÑ&crid=3TM8VIO4HHGWF&dib=eyJ2IjoiMSJ9.CLy-7_sR9xhhTHX30yuW5FVFQD1efXVnpG5iJMD4r5NuVibPJQbyV-bGHyf5Xm0imB2BHW9uJX2N0QyvdOqh-j7_ycOIx4xnpIwMtxVOcAdy9b50boBJ2UV55LW91PjpdodoIs_agzyLweroCx5zTwUsybz_2P2kvbVI8Vtn2Ml5NaqpOcrFUnxvUZThAtyDVQN5HUxQkAXy6WazabfKYJR9mpIkwxei_ZdpooPCNOen4zya9ve7NlP2q4cbRE-dqCv4dod0fMi1TlcyTWhSnTcb286CTD5A3IE0EqwttQ.7XdCK6-q5bBzSHDJ_hV2OnnFVWbk2Ni-c6tjD0TgmjQ&dib_tag=se&keywords=Dreame%2BAqua10%2BUltra%2BRoller&qid=1786467006&sprefix=dreame%2Baqua10%2Bultra%2Broller%2Caps%2C167&sr=8-1-spons&ufe=app_do%3Aamzn1.fos.27cde496-1382-47de-88f5-84dfdab2f435&aref=hsMP7npy5h&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&th=1",
+      "selector_price": "span.a-price-whole",
+      "selector_original_price": "span.a-text-price span.a-offscreen"
+    },
+    {
+      "name": "ECOVACS T90 PRO",
+      "url": "https://www.amazon.it/ECOVACS-T90-PRO-Aspirapolvere-Lavapavimenti/dp/B0GK1RD2T7/ref=sr_1_1?__mk_it_IT=ÅMÅŽÕÑ&crid=35JECAC8YCPEJ&dib=eyJ2IjoiMSJ9.ZR8mDaov1_lBYlr6wEPuju5a-C3-ALhfH0sf1CEIr1JfyxL8n5llj6DrkWDMec_o-5FZ-Ulx4Qu-PqCi0tGyK3uYvQ6GAdAtZjHIYg_BHep795bTb3jv2-qbtAa2P8ejyqc1ToVt0yyfLLF1pEht4hg_KtjO8Qs-HT20zThnDQXgGcYp39nYd9ADZe7udXxO80MahqEWa43Y54eRf1_q5QK3IILF5QZBOBXyED70gOEsVypF9WR6WZtvuEH_e1P5fc6TgTz6FgORXA8TQEuuhoQUvfrcEp3lBqITclybNvo.z_Eu6UdUqAGGqz3w19Jz81NCWwnzl3oxBpTNeSQe1Fk&dib_tag=se&keywords=Ecovacs%2BDeebot%2BX9%2BPro%2BOmni&qid=1786467144&sprefix=ecovacs%2Bdeebot%2Bx9%2Bpro%2Bomni%2Caps%2C141&sr=8-1&ufe=app_do%3Aamzn1.fos.27cde496-1382-47de-88f5-84dfdab2f435&th=1",
+      "selector_price": "span.a-price-whole",
+      "selector_original_price": "span.a-text-price span.a-offscreen"
+    },
+    {
+      "name": "Roborock Qrevo Edge",
+      "url": "https://www.amazon.it/roborock-Qrevo-Edge-Aspirapolvere-Lavapavimenti/dp/B0GMGT447Q/ref=sr_1_1_sspa?__mk_it_IT=ÅMÅŽÕÑ&crid=19HDY0T0IC56Q&dib=eyJ2IjoiMSJ9.hDHO9ZxSZYzR6JBO22TzBZccJ8tNcWPQuCMIRdbrtpB-8enucs8JKitH63crh7XHoixCdmR05dDkvfsDM3yE8aatwh3PKnomMuRtbHtX1dTqnaVKzVRq9kszLJj3ufhDKlcqO6P6DGzaU0dghigARY6K5N5ZH5SP_1X8Rapk2146BsJvFfwtgppojdgDLscEStAoFC8OYkranHKREDUEgWJ6KstvkZdAN5YZKd6nHF99n5WuSaj8ht_NY3845Lf-gf4DTEK0Hw4RhjqSE0PrhvJkXsbJwdb0BASnCIj7TuE.SqqHzvHvpcuxKJ8z0_mhCAuZH5p6X4FCtf1djS4oXkY&dib_tag=se&keywords=Roborock%2BQrevo%2BCurv%3A&qid=1786467186&sprefix=roborock%2Bqrevo%2Bcurv%2B%2Caps%2C168&sr=8-1-spons&ufe=app_do%3Aamzn1.fos.f8c2ab8c-2220-4fa9-a8aa-cf7cc7165a52&aref=CsiRS1v6mn&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&th=1",
+      "selector_price": "span.a-price-whole",
+      "selector_original_price": "span.a-text-price span.a-offscreen"
     }
   ]
 }

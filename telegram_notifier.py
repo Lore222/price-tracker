@@ -1,10 +1,49 @@
+import html
 import requests
 from typing import Dict, List
 
 TELEGRAM_API = "https://api.telegram.org/bot{token}/sendMessage"
 
 
-def _build_message(config: Dict, deals: List[Dict]) -> str:
+def _escape_text(value: str) -> str:
+    return html.escape(str(value), quote=True)
+
+
+def _send_telegram_message(config: Dict, text: str) -> bool:
+    """Invia un messaggio Telegram generico."""
+    telegram_config = config["telegram"]
+    bot_token = telegram_config.get("bot_token")
+    chat_id = telegram_config.get("chat_id")
+
+    if not bot_token or not chat_id:
+        print("  ❌ Configurazione Telegram incompleta: mancano bot_token o chat_id")
+        return False
+
+    url = TELEGRAM_API.format(token=bot_token)
+    try:
+        response = requests.post(
+            url,
+            json={
+                "chat_id": chat_id,
+                "text": text,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True,
+            },
+            timeout=20,
+        )
+        response.raise_for_status()
+        data = response.json()
+        if data.get("ok"):
+            print("  ✅ Messaggio Telegram inviato")
+            return True
+        print(f"  ❌ Errore invio Telegram: {data}")
+        return False
+    except Exception as e:
+        print(f"  ❌ Errore invio Telegram: {e}")
+        return False
+
+
+def _build_deals_message(config: Dict, deals: List[Dict]) -> str:
     """Costruisce il testo del messaggio Telegram con le offerte trovate."""
     lines = [
         "🔥 <b>OFFERTE IMPERDIBILI!</b>",
@@ -14,12 +53,45 @@ def _build_message(config: Dict, deals: List[Dict]) -> str:
 
     for deal in deals:
         discount = deal.get("discount_percent", 0)
-        current = deal.get("current_price", "N/D")
-        original = deal.get("original_price", "N/D")
-        lines.append(f"📦 <b>{deal['name']}</b>")
+        name = _escape_text(deal.get("name", "N/D"))
+        current = _escape_text(deal.get("current_price", "N/D"))
+        original = _escape_text(deal.get("original_price", "N/D"))
+        url = _escape_text(deal.get("url", ""))
+
+        lines.append(f"📦 <b>{name}</b>")
         lines.append(f"💶 Prezzo: <s>€{original}</s> → <b>€{current}</b>")
         lines.append(f"🏷️ Sconto: <b>{discount}%</b>")
-        lines.append(f"🔗 <a href=\"{deal['url']}\">Vai all'offerta</a>")
+        lines.append(f"🔗 <a href=\"{url}\">Vai all'offerta</a>")
+        lines.append("─────────────────────────")
+
+    lines.append("Monitoraggio prezzi automatico")
+    return "\n".join(lines)
+
+
+def _build_summary_message(config: Dict, products: List[Dict]) -> str:
+    """Costruisce il testo del riepilogo prezzi serale."""
+    lines = [
+        "🗓️ <b>RIEPILOGO PREZZI SERALI</b>",
+        f"Prodotti monitorati: <b>{len(products)}</b>",
+        "─────────────────────────",
+    ]
+
+    for item in products:
+        name = _escape_text(item.get("name", "N/D"))
+        url = _escape_text(item.get("url", ""))
+        lines.append(f"📦 <b>{name}</b>")
+
+        if item.get("error"):
+            lines.append(f"❌ Errore: {_escape_text(item['error'])}")
+        else:
+            current = _escape_text(item.get("current_price", "N/D"))
+            original = _escape_text(item.get("original_price", "N/D"))
+            discount = item.get("discount_percent")
+            discount_text = f" - <b>{discount}%</b>" if discount is not None else ""
+            lines.append(f"💶 Prezzo attuale: <b>€{current}</b>")
+            lines.append(f"💸 Prezzo originale: €{original}{discount_text}")
+
+        lines.append(f"🔗 <a href=\"{url}\">Vai al prodotto</a>")
         lines.append("─────────────────────────")
 
     lines.append("Monitoraggio prezzi automatico")
@@ -31,35 +103,14 @@ def send_telegram_alert(config: Dict, deals: List[Dict]) -> bool:
     if not deals:
         return False
 
-    telegram_config = config["telegram"]
-    bot_token = telegram_config.get("bot_token")
-    chat_id = telegram_config.get("chat_id")
+    message = _build_deals_message(config, deals)
+    return _send_telegram_message(config, message)
 
-    if not bot_token or not chat_id:
-        print("  ❌ Configurazione Telegram incompleta: mancano bot_token o chat_id")
+
+def send_telegram_summary(config: Dict, products: List[Dict]) -> bool:
+    """Invia un riepilogo Telegram di tutti i prezzi dei prodotti."""
+    if not products:
         return False
 
-    message = _build_message(config, deals)
-    url = TELEGRAM_API.format(token=bot_token)
-
-    try:
-        response = requests.post(
-            url,
-            json={
-                "chat_id": chat_id,
-                "text": message,
-                "parse_mode": "HTML",
-                "disable_web_page_preview": True,
-            },
-            timeout=20,
-        )
-        response.raise_for_status()
-        data = response.json()
-        if data.get("ok"):
-            print(f"  ✅ Messaggio Telegram inviato con {len(deals)} offerte")
-            return True
-        print(f"  ❌ Errore invio Telegram: {data}")
-        return False
-    except Exception as e:
-        print(f"  ❌ Errore invio Telegram: {e}")
-        return False
+    message = _build_summary_message(config, products)
+    return _send_telegram_message(config, message)

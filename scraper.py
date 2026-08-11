@@ -99,8 +99,6 @@ def extract_price_data_from_html(html: str, price_selectors, original_price_sele
             current_price = fallback_prices[0]
         if original_price is None and len(fallback_prices) > 1:
             original_price = fallback_prices[1]
-        elif original_price is None and fallback_prices:
-            original_price = fallback_prices[0]
 
     discount_percent = _calculate_discount(current_price, original_price)
 

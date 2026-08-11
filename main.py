@@ -5,10 +5,7 @@ import os
 import sys
 import time
 
-import schedule
-
 from config_loader import load_config
-from telegram_notifier import send_telegram_alert
 from scraper import check_all_products
 
 # Configurazione logging
@@ -56,9 +53,18 @@ def run_check(config):
 
     if deals:
         logger.info("🎯 Trovate %d offerte con sconto ≥ %s%%!", len(deals), threshold)
+        from telegram_notifier import send_telegram_alert
         send_telegram_alert(config, deals)
     else:
         logger.info("😴 Nessuna offerta con sconto ≥ %s%% in questo momento.", threshold)
+
+
+def run_summary(config):
+    """Esegue un riepilogo prezzi e invia un messaggio Telegram serale."""
+    logger.info("📊 Eseguo il riepilogo prezzi serale - %s", datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+    results = check_all_products(config["products"])
+    from telegram_notifier import send_telegram_summary
+    send_telegram_summary(config, results)
 
 
 def should_run_continuously(args, env):
@@ -102,7 +108,16 @@ def main():
         logger.info("✅ Esecuzione singola completata.")
         return
 
+    try:
+        import schedule
+    except ModuleNotFoundError:
+        logger.error(
+            "❌ Dipendenza mancante: 'schedule'. Installa le dipendenze con 'pip install -r requirements.txt'"
+        )
+        sys.exit(1)
+
     schedule.every(interval).minutes.do(run_check, config)
+    schedule.every().day.at("20:00").do(run_summary, config)
 
     try:
         while True:
