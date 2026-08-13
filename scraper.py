@@ -168,15 +168,15 @@ def fetch_product_price(
         return {"error": f"Errore di rete: {str(last_error)}"}
 
     price_selectors = _normalize_selectors(price_selector) + [
-        "span.a-price-whole",
         "#corePriceDisplay_desktop_feature_div span.a-price-whole",
+        "span.a-price-whole",
         "span.a-price > span:nth-child(2)",
         "span.a-price .a-offscreen",
     ]
     original_price_selectors = _normalize_selectors(original_price_selector) + [
+        "#corePriceDisplay_desktop_feature_div span.a-text-price span.a-offscreen",
         "span.a-text-price span.a-offscreen",
         "span.a-price.a-text-price span.a-offscreen",
-        "#corePriceDisplay_desktop_feature_div span.a-text-price span.a-offscreen",
     ]
 
     data = extract_price_data_from_html(response.text, price_selectors, original_price_selectors)
