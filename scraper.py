@@ -12,6 +12,22 @@ HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
 }
 
+SCRAPERAPI_ENDPOINT = "https://api.scraperapi.com/"
+
+
+def _get_via_scraperapi(url: str, api_key: str, timeout: int = 30):
+    """Recupera la pagina passando dal proxy ScraperAPI per evitare blocchi anti-bot.
+
+    ScraperAPI bypassa i sistemi anti-bot (verifiche captcha, rate limiting,
+    controlli User-Agent) facendo la richiesta dal suo datacenter e restituendo
+    l'HTML pulito della pagina richiesta.
+    """
+    payload = {
+        "api_key": api_key,
+        "url": url,
+    }
+    return requests.get(SCRAPERAPI_ENDPOINT, params=payload, timeout=timeout)
+
 
 def _parse_price(text: Optional[str]) -> Optional[float]:
     """Estrae un numero decimale da una stringa di prezzo."""
@@ -91,14 +107,19 @@ def extract_price_data_from_html(html: str, price_selectors, original_price_sele
     current_price = _extract_price_from_soup(soup, price_selectors)
     original_price = _extract_price_from_soup(soup, original_price_selectors)
 
-    if current_price is None or original_price is None:
+    # Se il prezzo attuale non è stato trovato con i selettori, si può usare il
+    # primo importo € presente nel markup come ultima risorsa.
+    if current_price is None:
         fallback_prices = _extract_prices_from_html_fallback(html)
-        # Usa i prezzi nell'ordine di apparizione: il primo è il prezzo attuale,
-        # il secondo è il prezzo originale (se presente).
-        if current_price is None and fallback_prices:
+        if fallback_prices:
             current_price = fallback_prices[0]
-        if original_price is None and len(fallback_prices) > 1:
-            original_price = fallback_prices[1]
+
+    # IMPORTO ORIGINALE: NON viene mai dedotto dall'ordine di apparizione dei
+    # prezzi nella pagina. Su pagine reali (Amazon, eBay) compaiono molti importi
+    # € non correlati (risparmi, spedizione, articoli sponsorizzati, dati JS) in
+    # ordine casuale: usare il "secondo prezzo" produce percentuali di sconto
+    # sbagliate e notifiche false. Il prezzo di listino è affidabile solo se
+    # trovato da un selettore dedicato (es. barrato / a-text-price).
 
     discount_percent = _calculate_discount(current_price, original_price)
 
@@ -109,8 +130,19 @@ def extract_price_data_from_html(html: str, price_selectors, original_price_sele
     }
 
 
-def fetch_product_price(url: str, price_selector, original_price_selector) -> Dict:
-    """Recupera prezzo attuale e prezzo originale da una pagina prodotto."""
+def fetch_product_price(
+    url: str,
+    price_selector,
+    original_price_selector,
+    scraperapi_key: Optional[str] = None,
+    timeout: int = 15,
+) -> Dict:
+    """Recupera prezzo attuale e prezzo originale da una pagina prodotto.
+
+    Se ``scraperapi_key`` è fornita, le richieste passano dal proxy ScraperAPI
+    (più affidabile contro i blocchi anti-bot); altrimenti si usa la richiesta
+    diretta con User-Agent simulato.
+    """
     response = None
     last_error = None
     max_retries = 3
@@ -118,7 +150,10 @@ def fetch_product_price(url: str, price_selector, original_price_selector) -> Di
 
     for attempt in range(max_retries):
         try:
-            response = requests.get(url, headers=HEADERS, timeout=15)
+            if scraperapi_key:
+                response = _get_via_scraperapi(url, scraperapi_key, timeout=timeout)
+            else:
+                response = requests.get(url, headers=HEADERS, timeout=timeout)
             response.raise_for_status()
             break
         except requests.RequestException as e:
@@ -170,8 +205,11 @@ def _calculate_discount(current_price: Optional[float], original_price: Optional
     return round(discount, 2)
 
 
-def check_all_products(products: list) -> list:
-    """Controlla tutti i prodotti e restituisce quelli con sconto >= soglia."""
+def check_all_products(products: list, scraperapi_key: Optional[str] = None) -> list:
+    """Controlla tutti i prodotti e restituisce quelli con sconto >= soglia.
+
+    Se ``scraperapi_key`` è fornita, usa il proxy ScraperAPI per tutte le richieste.
+    """
     results = []
     for product in products:
         print(f"  → Controllo: {product['name']}")
@@ -179,6 +217,7 @@ def check_all_products(products: list) -> list:
             product["url"],
             product.get("selector_price", "span.a-price-whole"),
             product.get("selector_original_price", "span.a-text-price span.a-offscreen"),
+            scraperapi_key=scraperapi_key,
         )
         data["name"] = product["name"]
         data["url"] = product["url"]

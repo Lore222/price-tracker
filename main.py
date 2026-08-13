@@ -27,7 +27,7 @@ def run_check(config):
     logger.info("🔍 Controllo prezzi - %s", datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
     logger.info("=" * 60)
 
-    results = check_all_products(config["products"])
+    results = check_all_products(config["products"], scraperapi_key=config.get("scraperapi_key"))
 
     # Filtra le offerte con sconto >= soglia
     threshold = config["discount_threshold"]
@@ -62,7 +62,7 @@ def run_check(config):
 def run_summary(config):
     """Esegue un riepilogo prezzi e invia un messaggio Telegram serale."""
     logger.info("📊 Eseguo il riepilogo prezzi serale - %s", datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
-    results = check_all_products(config["products"])
+    results = check_all_products(config["products"], scraperapi_key=config.get("scraperapi_key"))
     from telegram_notifier import send_telegram_summary
     send_telegram_summary(config, results)
 

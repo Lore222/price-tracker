@@ -1,10 +1,13 @@
 import unittest
+from unittest import mock
 
 from scraper import (
     _calculate_discount,
     _extract_prices_from_html_fallback,
+    _get_via_scraperapi,
     _parse_price,
     extract_price_data_from_html,
+    fetch_product_price,
 )
 
 
@@ -32,6 +35,8 @@ class ScraperParsingTests(unittest.TestCase):
         self.assertEqual(data["discount_percent"], 13.35)
 
     def test_extract_price_data_falls_back_to_regex_values(self):
+        """Il fallback regex recupera solo il prezzo attuale; il prezzo originale
+        non deve essere dedotto dall'ordine di apparizione dei prezzi."""
         html = """
         <html><body>
             <div>Prezzo attuale: 649,00€</div>
@@ -46,10 +51,11 @@ class ScraperParsingTests(unittest.TestCase):
         )
 
         self.assertEqual(data["current_price"], 649.0)
-        self.assertEqual(data["original_price"], 749.0)
+        self.assertIsNone(data["original_price"])
+        self.assertIsNone(data["discount_percent"])
 
     def test_extract_price_data_supports_euro_before_number(self):
-        """Test che il fallback regex gestisca € prima del numero."""
+        """Test che il fallback regex gestisca € prima del numero (solo prezzo attuale)."""
         html = """
         <html><body>
             <div>Prezzo attuale: €649,00</div>
@@ -64,7 +70,7 @@ class ScraperParsingTests(unittest.TestCase):
         )
 
         self.assertEqual(data["current_price"], 649.0)
-        self.assertEqual(data["original_price"], 749.0)
+        self.assertIsNone(data["original_price"])
 
     def test_extract_price_data_handles_price_increase(self):
         """Test che un aumento di prezzo non produca sconto negativo."""
@@ -82,7 +88,7 @@ class ScraperParsingTests(unittest.TestCase):
         )
 
         self.assertEqual(data["current_price"], 799.0)
-        self.assertEqual(data["original_price"], 749.0)
+        self.assertIsNone(data["original_price"])
         self.assertIsNone(data["discount_percent"])
 
     def test_extract_price_data_handles_same_price(self):
@@ -101,7 +107,30 @@ class ScraperParsingTests(unittest.TestCase):
         )
 
         self.assertEqual(data["current_price"], 749.0)
-        self.assertEqual(data["original_price"], 749.0)
+        self.assertIsNone(data["original_price"])
+        self.assertIsNone(data["discount_percent"])
+
+    def test_extract_price_data_does_not_guess_original_from_unrelated_prices(self):
+        """Regressione: il prezzo originale non deve essere dedotto dal secondo
+        importo € nella pagina, altrimenti arrivano sconti/notifiche sbagliati."""
+        html = """
+        <html><body>
+            <span class="a-price-whole">399</span>
+            <span class="price-ship">Spedizione: 9,99€</span>
+            <div class="compare">Confronta: 1399,00€</div>
+        </body></html>
+        """
+
+        # Il prezzo attuale viene trovato, ma il selettore del prezzo originale
+        # fallisce: il bot NON deve inventare 1399,00€ come prezzo di listino.
+        data = extract_price_data_from_html(
+            html,
+            ["#missing", "span.a-price-whole"],
+            ["span.a-text-price span.a-offscreen"],
+        )
+
+        self.assertEqual(data["current_price"], 399.0)
+        self.assertIsNone(data["original_price"])
         self.assertIsNone(data["discount_percent"])
 
     def test_extract_price_data_handles_no_prices(self):
@@ -177,6 +206,48 @@ class ScraperParsingTests(unittest.TestCase):
         self.assertIn(649.0, prices)
         self.assertIn(749.0, prices)
         self.assertIn(599.0, prices)
+
+
+class ScraperApiIntegrationTests(unittest.TestCase):
+    """Test dell'integrazione con il proxy ScraperAPI."""
+
+    def test_get_via_scraperapi_sends_correct_payload(self):
+        """Verifica che ScraperAPI riceva api_key e url come parametri corretti."""
+        with mock.patch("scraper.requests.get") as mocked_get:
+            mocked_get.return_value = mock.Mock(text="<html></html>", raise_for_status=lambda: None)
+            _get_via_scraperapi("https://www.amazon.it/dp/EXAMPLE", "api-key-test")
+            mocked_get.assert_called_once_with(
+                "https://api.scraperapi.com/",
+                params={"api_key": "api-key-test", "url": "https://www.amazon.it/dp/EXAMPLE"},
+                timeout=30,
+            )
+
+    def test_fetch_product_price_uses_scraperapi_when_key_given(self):
+        """Con una chiave, fetch_product_price passa dal proxy ScraperAPI."""
+        html = '<span class="a-price-whole">649</span>'
+        with mock.patch("scraper.requests.get") as mocked_get:
+            mocked_get.return_value = mock.Mock(text=html, raise_for_status=lambda: None)
+            data = fetch_product_price(
+                "https://www.amazon.it/dp/EXAMPLE",
+                "span.a-price-whole",
+                None,
+                scraperapi_key="KEY",
+                timeout=45,
+            )
+            self.assertEqual(data["current_price"], 649.0)
+            self.assertEqual(mocked_get.call_args[0][0], "https://api.scraperapi.com/")
+            self.assertEqual(mocked_get.call_args[1]["params"]["api_key"], "KEY")
+            self.assertEqual(mocked_get.call_args[1]["timeout"], 45)
+
+    def test_fetch_product_price_uses_direct_request_without_key(self):
+        """Senza chiave, fetch_product_price fa una richiesta diretta."""
+        html = '<span class="a-price-whole">399</span>'
+        with mock.patch("scraper.requests.get") as mocked_get:
+            mocked_get.return_value = mock.Mock(text=html, raise_for_status=lambda: None)
+            data = fetch_product_price("https://www.amazon.it/dp/EXAMPLE", "span.a-price-whole", None)
+            self.assertEqual(data["current_price"], 399.0)
+            self.assertEqual(mocked_get.call_args[0][0], "https://www.amazon.it/dp/EXAMPLE")
+            self.assertNotIn("api_key", mocked_get.call_args[1].get("params", {}))
 
 
 if __name__ == "__main__":

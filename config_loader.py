@@ -84,6 +84,14 @@ def load_config(config_path: str = "config.json") -> Dict[str, Any]:
     config.setdefault("discount_threshold", 70)
     config.setdefault("products", [])
 
+    # Chiave API ScraperAPI (opzionale). Priorità alla variabile d'ambiente
+    # SCRAPERAPI_API_KEY (mai committata), fallback alla sezione "scraperapi"
+    # del file di configurazione. Usata per fare lo scraping via proxy e
+    # ridurre i blocchi anti-bot.
+    scraperapi_env = os.getenv("SCRAPERAPI_API_KEY")
+    scraperapi_section = config.get("scraperapi") or {}
+    config["scraperapi_key"] = scraperapi_env or scraperapi_section.get("api_key")
+
     if not isinstance(config["products"], list):
         raise ValueError("La lista 'products' deve essere una lista")
 

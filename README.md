@@ -80,6 +80,30 @@ Nel campo `products` aggiungi ogni prodotto con:
 
 > 💡 **Trovare i selettori CSS**: apri la pagina prodotto, fai clic destro sul prezzo → "Ispeziona", e copia il selettore dell'elemento.
 
+### 3. (Opzionale) Rendere lo scraping più affidabile con ScraperAPI
+
+Alcuni siti (in particolare Amazon) mostrano pagine di verifica anti-bot che bloccano
+lo scraping diretto. Per ridurre questi errori puoi usare **[ScraperAPI](https://scraperapi.com)**
+come proxy dedicato. Lo scraper la userà automaticamente se trova una chiave.
+
+Impostala via **variabile d'ambiente** (consigliato, non viene mai committato nel repo):
+
+```bash
+export SCRAPERAPI_API_KEY="la_tua_chiave"
+```
+
+In alternativa puoi inserirla nella sezione `scraperapi` del `config.json`:
+
+```json
+"scraperapi": {
+    "api_key": "la_tua_chiave"
+}
+```
+
+> ⚠️ **Importante**: `config.json` ora è tracciato sul repository. Per non esporre la
+chiave pubblicamente, usa la variabile d'ambiente o un **GitHub secret**
+(`SCRAPERAPI_API_KEY`) nei workflow. La chiave via `config.json` va bene solo in locale.
+
 ### 3. Impostazioni personalizzate
 
 | Parametro | Descrizione | Default |

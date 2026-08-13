@@ -5,6 +5,9 @@
   },
   "check_interval_minutes": 60,
   "discount_threshold": 70,
+  "scraperapi": {
+    "api_key": "IL_TUO_API_KEY_SCRAPERAPI"
+  },
   "products": [
     {
       "name": "iPhone 15",

@@ -5,6 +5,9 @@
   },
   "check_interval_minutes": 60,
   "discount_threshold": 70,
+  "scraperapi": {
+    "api_key": ""
+  },
   "products": [
     {
       "name": "Lefant M5 Pro",
