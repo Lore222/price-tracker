@@ -10,37 +10,46 @@ def _escape_text(value: str) -> str:
 
 
 def _send_telegram_message(config: Dict, text: str) -> bool:
-    """Invia un messaggio Telegram generico."""
+    """Invia un messaggio Telegram generico a uno o più chat_id (separati da virgola)."""
     telegram_config = config["telegram"]
     bot_token = telegram_config.get("bot_token")
-    chat_id = telegram_config.get("chat_id")
+    chat_ids_raw = telegram_config.get("chat_id")
 
-    if not bot_token or not chat_id:
+    if not bot_token or not chat_ids_raw:
         print("  ❌ Configurazione Telegram incompleta: mancano bot_token o chat_id")
         return False
 
+    # Supporta più destinatari separati da virgola, es. "169943050,761389545"
+    chat_ids = [c.strip() for c in str(chat_ids_raw).split(",") if c.strip()]
+    if not chat_ids:
+        print("  ❌ Configurazione Telegram incompleta: chat_id vuoto")
+        return False
+
     url = TELEGRAM_API.format(token=bot_token)
-    try:
-        response = requests.post(
-            url,
-            json={
-                "chat_id": chat_id,
-                "text": text,
-                "parse_mode": "HTML",
-                "disable_web_page_preview": True,
-            },
-            timeout=20,
-        )
-        response.raise_for_status()
-        data = response.json()
-        if data.get("ok"):
-            print("  ✅ Messaggio Telegram inviato")
-            return True
-        print(f"  ❌ Errore invio Telegram: {data}")
-        return False
-    except Exception as e:
-        print(f"  ❌ Errore invio Telegram: {e}")
-        return False
+    all_ok = True
+    for chat_id in chat_ids:
+        try:
+            response = requests.post(
+                url,
+                json={
+                    "chat_id": chat_id,
+                    "text": text,
+                    "parse_mode": "HTML",
+                    "disable_web_page_preview": True,
+                },
+                timeout=20,
+            )
+            response.raise_for_status()
+            data = response.json()
+            if data.get("ok"):
+                print(f"  ✅ Messaggio Telegram inviato a {chat_id}")
+            else:
+                print(f"  ❌ Errore invio Telegram a {chat_id}: {data}")
+                all_ok = False
+        except Exception as e:
+            print(f"  ❌ Errore invio Telegram a {chat_id}: {e}")
+            all_ok = False
+    return all_ok
 
 
 def _build_deals_message(config: Dict, deals: List[Dict]) -> str:
