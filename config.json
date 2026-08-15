@@ -17,7 +17,13 @@
     },
     {
       "name": "Dreame L40 Ultra AE",
-      "url": "https://www.amazon.it/Aspirapolvere-aspirazione-automatico-autopulizia-centrifuga/dp/B0H4ZYD4NQ/ref=sr_1_8?crid=25DWCTMO30ORE&dib=eyJ2IjoiMSJ9.RMqiS--DR7Dwe0h4r89m30Ye4mFVujPPuJs8mSzZFYgeIgJt-apliEjFA954rZTQnujf1b9qyE7KMsGa3LqabFsOEGTkGYBQJUVcYs12e7rcRka7VG0gicXzF0C3luom2m0r1oAnMuvLuJWSSVy6x5Gs7EZ00nNiuklLr50-yl5gkwgkHO4U0fGKpCS8gyttr1EbtM841AoOtaKtDX2XPXYm2Gb6KY5bYcFSPa6Ey4pSMjf539ep1RzcxN3zzV_aib02V3OXq95MPWLMyU1DZkTWDccdxaJ9leWXxEvo0_Y._Aht7M7ItHeyyZZM9tpL4EwQWAp7XmPIdai58sNOYqg&dib_tag=se&keywords=dreame+l40+ultra+ae&qid=1786650081&sprefix=dreame+l40+ultra%2Caps%2C213&sr=8-8&ufe=app_do%3Aamzn1.fos.f8c2ab8c-2220-4fa9-a8aa-cf7cc7165a52",
+      "url": "https://www.amazon.it/dp/B0GQBX475S",
+      "selector_price": "span.a-price-whole",
+      "selector_original_price": "span.a-text-price span.a-offscreen"
+    },
+    {
+      "name": "Dreame L50",
+      "url": "https://www.amazon.it/dp/B0GD78Z9JT",
       "selector_price": "span.a-price-whole",
       "selector_original_price": "span.a-text-price span.a-offscreen"
     },
