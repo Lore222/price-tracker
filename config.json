@@ -28,6 +28,12 @@
       "selector_original_price": "span.a-text-price span.a-offscreen"
     },
     {
+      "name": "Dreame X60 Pro Ultra Complete",
+      "url": "https://www.amazon.it/dp/B0GSWYM8Q2",
+      "selector_price": "span.a-price-whole",
+      "selector_original_price": "span.a-text-price span.a-offscreen"
+    },
+    {
       "name": "Roborock Qrevo Edge",
       "url": "https://www.amazon.it/roborock-Qrevo-Edge-Aspirapolvere-Lavapavimenti/dp/B0GMGT447Q/ref=sr_1_1_sspa?__mk_it_IT=ÅMÅŽÕÑ&crid=19HDY0T0IC56Q&dib=eyJ2IjoiMSJ9.hDHO9ZxSZYzR6JBO22TzBZccJ8tNcWPQuCMIRdbrtpB-8enucs8JKitH63crh7XHoixCdmR05dDkvfsDM3yE8aatwh3PKnomMuRtbHtX1dTqnaVKzVRq9kszLJj3ufhDKlcqO6P6DGzaU0dghigARY6K5N5ZH5SP_1X8Rapk2146BsJvFfwtgppojdgDLscEStAoFC8OYkranHKREDUEgWJ6KstvkZdAN5YZKd6nHF99n5WuSaj8ht_NY3845Lf-gf4DTEK0Hw4RhjqSE0PrhvJkXsbJwdb0BASnCIj7TuE.SqqHzvHvpcuxKJ8z0_mhCAuZH5p6X4FCtf1djS4oXkY&dib_tag=se&keywords=Roborock%252BQrevo%252BCurv%253A&qid=1786467186&sprefix=roborock%252Bqrevo%252Bcurv%252B%252Caps%252C168&sr=8-1-spons&ufe=app_do%253Aamzn1.fos.f8c2ab8c-2220-4fa9-a8aa-cf7cc7165a52&aref=CsiRS1v6mn&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&th=1",
       "selector_price": "span.a-price-whole",
