@@ -48,6 +48,8 @@ Inserisci i dati nel campo `telegram` del file `config.json`:
 }
 ```
 
+> 💡 Puoi inviare le notifiche a **più chat** separando i chat ID con una virgola, ad esempio `"chat_id": "123456789,987654321"`.
+
 > 💡 In alternativa puoi impostarli tramite le variabili d'ambiente `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID`, che hanno la precedenza sui valori del file.
 
 ### 2. Aggiungere i prodotti da monitorare
@@ -104,7 +106,7 @@ In alternativa puoi inserirla nella sezione `scraperapi` del `config.json`:
 chiave pubblicamente, usa la variabile d'ambiente o un **GitHub secret**
 (`SCRAPERAPI_API_KEY`) nei workflow. La chiave via `config.json` va bene solo in locale.
 
-### 3. Impostazioni personalizzate
+### 4. Impostazioni personalizzate
 
 | Parametro | Descrizione | Default |
 |-----------|-------------|---------|
@@ -139,10 +141,11 @@ Il progetto include due workflow GitHub Actions che funzionano senza bisogno di 
 1. Crea un repository su GitHub e pusha il progetto
 2. Aggiungi i secrets del repository:
    - `TELEGRAM_BOT_TOKEN` → il token del tuo bot
-   - `TELEGRAM_CHAT_ID` → il tuo chat ID
+   - `TELEGRAM_CHAT_ID` → il tuo chat ID (più chat ID separati da virgola)
+   - `SCRAPERAPI_API_KEY` → (opzionale) la tua chiave ScraperAPI per uno scraping più affidabile
 3. I workflow si attivano automaticamente
 
-> ⚠️ **Nota**: su GitHub Actions la configurazione viene letta dalle variabili d'ambiente (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`), non dal file `config.json`. I prodotti da monitorare vanno configurati nel file `config.json` presente nel repository.
+> ⚠️ **Nota**: su GitHub Actions la configurazione viene letta dalle variabili d'ambiente (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `SCRAPERAPI_API_KEY`), non dal file `config.json`. I prodotti da monitorare vanno configurati nel file `config.json` presente nel repository.
 
 ## 📁 Struttura del progetto
 
@@ -164,12 +167,11 @@ price-tracker/
 - **Rispetta i siti web**: il programma attende 2 secondi tra una richiesta e l'altra
 - **Selettori CSS**: possono cambiare se il sito aggiorna il layout, aggiorna i selettori in `config.json`
 - **Anti-bot**: alcuni siti potrebbero bloccare lo scraping, in tal caso usa un User-Agent diverso o un proxy
-- **Telegram**: il bot token è un segreto, non condividerlo pubblicamente (il file `config.json` è già in `.gitignore`)
+- **Telegram**: il bot token è un segreto, non condividerlo pubblicamente. Il file `config.json` è tracciato sul repository: non inserire al suo interno token o chiavi API, usa le variabili d'ambiente o i GitHub secrets
 - **GitHub Actions**: i cron job usano il fuso orario UTC. Il riepilogo delle 20:00 italiane corrisponde a `0 18 * * *` (18:00 UTC). In estate (CEST) l'Italia è UTC+2, in inverno (CET) UTC+1 — regola il cron se necessario.
 
 ## 🔒 Privacy
 
-- Il bot token Telegram è salvato localmente in `config.json` (in `.gitignore`)
+- Il bot token Telegram non va salvato in `config.json` (tracciato sul repository): usa le variabili d'ambiente o i GitHub secrets
 - Su GitHub Actions il token è salvato come secret del repository (mai esposto nei log)
-- Nessun dato viene inviato a terze parti
-- Le richieste vanno direttamente ai siti e-commerce configurati
+- Se configuri una chiave ScraperAPI, le richieste passano dal proxy di ScraperAPI (servizio di terze parti) per evitare blocchi anti-bot; senza chiave le richieste vanno direttamente ai siti e-commerce configurati

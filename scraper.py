@@ -1,9 +1,16 @@
 import re
 import time
+import random
+import logging
 from typing import Dict, List, Optional, Tuple
+import concurrent.futures
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -58,6 +65,27 @@ def _normalize_selectors(selectors) -> list:
     if isinstance(selectors, str):
         return [selectors]
     return [selector for selector in selectors if selector]
+
+
+def _is_anti_bot_page(html: str) -> bool:
+    """Rileva se la pagina restituita è una pagina di verifica/anti-bot.
+
+    Su pagine anti-bot (es. Amazon) il markup contiene messaggi di verifica
+    e/o importi € casuali non correlati al prodotto. Rilevarli prima di
+    applicare il fallback evita di usare prezzi falsi come se fossero reali.
+    """
+    text = html.lower()
+    markers = [
+        "continuare a fare acquisti",
+        "to discuss automated access",
+        "verify you are human",
+        "robot check",
+        "captcha",
+        "access denied",
+        "sorry, we just need to make sure you're not a robot",
+        "api-key",
+    ]
+    return any(marker in text for marker in markers)
 
 
 def _extract_price_from_soup(soup: BeautifulSoup, selectors) -> Optional[float]:
@@ -136,10 +164,11 @@ def fetch_product_price(
     original_price_selector,
     scraperapi_key: Optional[str] = None,
     timeout: int = 15,
+    use_session: bool = False,
 ) -> Dict:
     """Recupera prezzo attuale e prezzo originale da una pagina prodotto.
 
-    Se ``scraperapi_key`` è fornita, le richieste passano dal proxy ScraperAPI
+    Se 'scraperapi_key' è fornita, le richieste passano dal proxy ScraperAPI
     (più affidabile contro i blocchi anti-bot); altrimenti si usa la richiesta
     diretta con User-Agent simulato.
     """
@@ -150,17 +179,37 @@ def fetch_product_price(
 
     for attempt in range(max_retries):
         try:
-            if scraperapi_key:
-                response = _get_via_scraperapi(url, scraperapi_key, timeout=timeout)
+            if use_session:
+                # Crea una session con retry/backoff per richieste concorrenti
+                session = requests.Session()
+                retries = Retry(total=3, backoff_factor=0.5,
+                                status_forcelist=(429, 500, 502, 503, 504),
+                                allowed_methods=frozenset(["GET", "POST"]))
+                adapter = HTTPAdapter(max_retries=retries)
+                session.mount("https://", adapter)
+                session.mount("http://", adapter)
+
+                if scraperapi_key:
+                    response = session.get(SCRAPERAPI_ENDPOINT, params={"api_key": scraperapi_key, "url": url}, timeout=timeout)
+                else:
+                    response = session.get(url, headers=HEADERS, timeout=timeout)
+                session.close()
             else:
-                response = requests.get(url, headers=HEADERS, timeout=timeout)
+                if scraperapi_key:
+                    response = _get_via_scraperapi(url, scraperapi_key, timeout=timeout)
+                else:
+                    response = requests.get(url, headers=HEADERS, timeout=timeout)
             response.raise_for_status()
             break
         except requests.RequestException as e:
             last_error = e
             if attempt < max_retries - 1:
-                delay = retry_delay * (2 ** attempt)  # Exponential backoff: 2s, 4s
-                print(f"    ⚠️  Tentativo {attempt + 1} fallito, riprovo tra {delay}s...")
+                # Exponential backoff con jitter
+                base_delay = retry_delay * (2 ** attempt)
+                jitter = random.uniform(0, 1.0)
+                delay = round(base_delay + jitter, 2)
+                logger.warning("Tentativo %d fallito (%s), riprovo tra %ss...",
+                               attempt + 1, str(e), delay)
                 time.sleep(delay)
                 continue
 
@@ -179,11 +228,16 @@ def fetch_product_price(
         "span.a-price.a-text-price span.a-offscreen",
     ]
 
+    # Se la pagina è una pagina di verifica/anti-bot, restituisci subito un
+    # errore chiaro: il fallback sui prezzi dal markup produrrebbe importi
+    # falsi (es. spedizione, risparmi, articoli sponsorizzati) spacciandoli
+    # per il prezzo reale del prodotto.
+    if _is_anti_bot_page(response.text):
+        return {"error": "Amazon ha restituito una pagina di verifica/anti-bot; il prezzo non è disponibile via scraping."}
+
     data = extract_price_data_from_html(response.text, price_selectors, original_price_selectors)
 
     if data["current_price"] is None:
-        if "continuare a fare acquisti" in response.text.lower() or "to discuss automated access" in response.text.lower():
-            return {"error": "Amazon ha restituito una pagina di verifica/anti-bot; il prezzo non è disponibile via scraping."}
         return {"error": "Prezzo attuale non trovato con il selettore specificato"}
 
     return data
@@ -208,19 +262,52 @@ def _calculate_discount(current_price: Optional[float], original_price: Optional
 def check_all_products(products: list, scraperapi_key: Optional[str] = None) -> list:
     """Controlla tutti i prodotti e restituisce quelli con sconto >= soglia.
 
-    Se ``scraperapi_key`` è fornita, usa il proxy ScraperAPI per tutte le richieste.
+    Se 'scraperapi_key' è fornita, usa il proxy ScraperAPI per tutte le richieste.
     """
     results = []
-    for product in products:
-        print(f"  → Controllo: {product['name']}")
-        data = fetch_product_price(
-            product["url"],
-            product.get("selector_price", "span.a-price-whole"),
-            product.get("selector_original_price", "span.a-text-price span.a-offscreen"),
-            scraperapi_key=scraperapi_key,
-        )
-        data["name"] = product["name"]
-        data["url"] = product["url"]
-        results.append(data)
-        time.sleep(2)  # Rispetta i siti tra una richiesta e l'altra
+
+    # Parametro opzionale per abilitare la parallelizzazione senza rompere i test
+    # Lasciamo il comportamento sequenziale come default per compatibilità.
+    parallel = False
+    max_workers = min(10, max(1, len(products)))
+
+    if parallel and len(products) > 1:
+        logger.info("Esecuzione controlli prodotti in parallelo (%d worker)", max_workers)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {}
+            for product in products:
+                futures[executor.submit(
+                    fetch_product_price,
+                    product["url"],
+                    product.get("selector_price", "span.a-price-whole"),
+                    product.get("selector_original_price", "span.a-text-price span.a-offscreen"),
+                    scraperapi_key,
+                    15,
+                    True,
+                )] = product
+
+            for fut in concurrent.futures.as_completed(futures):
+                product = futures[fut]
+                try:
+                    data = fut.result()
+                except Exception as e:
+                    logger.exception("Errore durante il controllo di %s: %s", product.get("name"), e)
+                    data = {"error": str(e)}
+                data["name"] = product["name"]
+                data["url"] = product["url"]
+                results.append(data)
+    else:
+        for product in products:
+            logger.info("Controllo prodotto: %s", product.get("name"))
+            data = fetch_product_price(
+                product["url"],
+                product.get("selector_price", "span.a-price-whole"),
+                product.get("selector_original_price", "span.a-text-price span.a-offscreen"),
+                scraperapi_key=scraperapi_key,
+            )
+            data["name"] = product["name"]
+            data["url"] = product["url"]
+            results.append(data)
+            time.sleep(2)  # Rispetta i siti tra una richiesta e l'altra
+
     return results

@@ -1,8 +1,11 @@
 import html
+import logging
 import requests
 from typing import Dict, List
 
 TELEGRAM_API = "https://api.telegram.org/bot{token}/sendMessage"
+
+logger = logging.getLogger(__name__)
 
 
 def _escape_text(value: str) -> str:
@@ -16,13 +19,13 @@ def _send_telegram_message(config: Dict, text: str) -> bool:
     chat_ids_raw = telegram_config.get("chat_id")
 
     if not bot_token or not chat_ids_raw:
-        print("  ❌ Configurazione Telegram incompleta: mancano bot_token o chat_id")
+        logger.error("Configurazione Telegram incompleta: mancano bot_token o chat_id")
         return False
 
     # Supporta più destinatari separati da virgola, es. "169943050,761389545"
     chat_ids = [c.strip() for c in str(chat_ids_raw).split(",") if c.strip()]
     if not chat_ids:
-        print("  ❌ Configurazione Telegram incompleta: chat_id vuoto")
+        logger.error("Configurazione Telegram incompleta: chat_id vuoto")
         return False
 
     url = TELEGRAM_API.format(token=bot_token)
@@ -42,12 +45,12 @@ def _send_telegram_message(config: Dict, text: str) -> bool:
             response.raise_for_status()
             data = response.json()
             if data.get("ok"):
-                print(f"  ✅ Messaggio Telegram inviato a {chat_id}")
+                logger.info("Messaggio Telegram inviato a %s", chat_id)
             else:
-                print(f"  ❌ Errore invio Telegram a {chat_id}: {data}")
+                logger.error("Errore invio Telegram a %s: %s", chat_id, data)
                 all_ok = False
         except Exception as e:
-            print(f"  ❌ Errore invio Telegram a {chat_id}: {e}")
+            logger.exception("Errore invio Telegram a %s: %s", chat_id, e)
             all_ok = False
     return all_ok
 

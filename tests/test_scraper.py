@@ -5,6 +5,7 @@ from scraper import (
     _calculate_discount,
     _extract_prices_from_html_fallback,
     _get_via_scraperapi,
+    _is_anti_bot_page,
     _parse_price,
     extract_price_data_from_html,
     fetch_product_price,
@@ -248,6 +249,37 @@ class ScraperApiIntegrationTests(unittest.TestCase):
             self.assertEqual(data["current_price"], 399.0)
             self.assertEqual(mocked_get.call_args[0][0], "https://www.amazon.it/dp/EXAMPLE")
             self.assertNotIn("api_key", mocked_get.call_args[1].get("params", {}))
+
+    def test_is_anti_bot_page_detects_verification_page(self):
+        """Rileva una pagina di verifica/anti-bot (es. Amazon)."""
+        html = (
+            "<html><body>Per continuare a fare acquisti, inserisci i caratteri "
+            "qui sotto. <span>€10.0</span> <span>€5.99</span></body></html>"
+        )
+        self.assertTrue(_is_anti_bot_page(html))
+
+    def test_is_anti_bot_page_does_not_flag_normal_page(self):
+        """Una pagina prodotto normale non deve essere rilevata come anti-bot."""
+        html = '<html><body><span class="a-price-whole">649,00</span></body></html>'
+        self.assertFalse(_is_anti_bot_page(html))
+
+    def test_fetch_product_price_returns_error_on_anti_bot_page(self):
+        """Regressione: su una pagina anti-bot con importi € casuali, il bot deve
+        restituire un errore chiaro e NON un prezzo falso (es. €10.0)."""
+        html = (
+            "<html><body>Per continuare a fare acquisti, inserisci i caratteri "
+            "qui sotto. <span>€10.0</span> <span>€5.99</span></body></html>"
+        )
+        with mock.patch("scraper.requests.get") as mocked_get:
+            mocked_get.return_value = mock.Mock(text=html, raise_for_status=lambda: None)
+            data = fetch_product_price(
+                "https://www.amazon.it/dp/EXAMPLE",
+                "span.a-price-whole",
+                "span.a-text-price span.a-offscreen",
+            )
+            self.assertIn("error", data)
+            self.assertIn("anti-bot", data["error"])
+            self.assertNotIn("current_price", data)
 
 
 if __name__ == "__main__":
