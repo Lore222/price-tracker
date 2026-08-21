@@ -50,6 +50,12 @@
       "url": "https://www.amazon.it/dreame-Aqua10-Roller-Complete-Aspirapolvere/dp/B0FHHYQ58Q/ref=sr_1_1_sspa?__mk_it_IT=ÅMÅŽÕÑ&crid=3TM8VIO4HHGWF&dib=eyJ2IjoiMSJ9.CLy-7_sR9xhhTHX30yuW5FVFQD1efXVnpG5iJMD4r5NuVibPJQbyV-bGHyf5Xm0imB2BHW9uJX2N0QyvdOqh-j7_ycOIx4xnpIwMtxVOcAdy9b50boBJ2UV55LW91PjpdodoIs_agzyLweroCx5zTwUsybz_2P2kvbVI8Vtn2Ml5NaqpOcrFUnxvUZThAtyDVQN5HUxQkAXy6WazabfKYJR9mpIkwxei_ZdpooPCNOen4zya9ve7NlP2q4cbRE-dqCv4dod0fMi1TlcyTWhSnTcb286CTD5A3IE0EqwttQ.7XdCK6-q5bBzSHDJ_hV2OnnFVWbk2Ni-c6tjD0TgmjQ&dib_tag=se&keywords=Dreame%252BAqua10%252BUltra%252BRoller&qid=1786467006&sprefix=dreame%252Baqua10%252Bultra%252Broller%252Caps%252C167&sr=8-1-spons&ufe=app_do%253Aamzn1.fos.27cde496-1382-47de-88f5-84dfdab2f435&aref=hsMP7npy5h&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&th=1",
       "selector_price": "span.a-price-whole",
       "selector_original_price": "span.a-text-price span.a-offscreen"
+    },
+    {
+      "name": "Dreame L50 Ultra (eBay)",
+      "url": "https://www.ebay.it/itm/820012880111",
+      "selector_price": "span.ux-textspans--BOLD",
+      "selector_original_price": "span.ux-textspans--STRIKETHROUGH"
     }
   ]
 }

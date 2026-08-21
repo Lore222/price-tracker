@@ -2,8 +2,7 @@ import re
 import time
 import random
 import logging
-from typing import Dict, List, Optional, Tuple
-import concurrent.futures
+from typing import Dict, List, Optional
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -83,6 +82,9 @@ def _is_anti_bot_page(html: str) -> bool:
         "captcha",
         "access denied",
         "sorry, we just need to make sure you're not a robot",
+        # Pagina di blocco/errore tipica di eBay quando nega l'accesso allo
+        # scraping (HTTP 403) con importi € casuali nel footer.
+        "something went wrong on our end",
         "api-key",
     ]
     return any(marker in text for marker in markers)
@@ -112,11 +114,11 @@ def _extract_prices_from_html_fallback(html: str) -> List[float]:
 
     I prezzi vengono restituiti nell'ordine di apparizione nel markup.
     """
-    # Un unico pattern che cattura sia € prima che € dopo il numero,
-    # rispettando l'ordine di apparizione nel markup.
+    # Un unico pattern che cattura sia € che EUR (es. "EUR 1.099,00" di eBay
+    # Italia) prima o dopo il numero, rispettando l'ordine di apparizione.
     pattern = (
-        r"(?:€\s*(\d{1,3}(?:[.\s]\d{3})*(?:[.,]\d{2})?)"
-        r"|(\d{1,3}(?:[.\s]\d{3})*(?:[.,]\d{2})?)\s*€)"
+        r"(?:(?:€|EUR)\s*(\d{1,3}(?:[.\s]\d{3})*(?:[.,]\d{2})?)"
+        r"|(\d{1,3}(?:[.\s]\d{3})*(?:[.,]\d{2})?)\s*(?:€|EUR))"
     )
     matches = re.findall(pattern, html, flags=re.IGNORECASE)
 
@@ -233,7 +235,7 @@ def fetch_product_price(
     # falsi (es. spedizione, risparmi, articoli sponsorizzati) spacciandoli
     # per il prezzo reale del prodotto.
     if _is_anti_bot_page(response.text):
-        return {"error": "Amazon ha restituito una pagina di verifica/anti-bot; il prezzo non è disponibile via scraping."}
+        return {"error": "Il sito ha restituito una pagina di verifica/blocco anti-bot; il prezzo non è disponibile via scraping."}
 
     data = extract_price_data_from_html(response.text, price_selectors, original_price_selectors)
 
@@ -263,51 +265,21 @@ def check_all_products(products: list, scraperapi_key: Optional[str] = None) -> 
     """Controlla tutti i prodotti e restituisce quelli con sconto >= soglia.
 
     Se 'scraperapi_key' è fornita, usa il proxy ScraperAPI per tutte le richieste.
+    I controlli sono eseguiti in modo sequenziale, attendendo 2 secondi tra una
+    richiesta e l'altra per rispettare i siti (evitando rate-limit/ban).
     """
     results = []
-
-    # Parametro opzionale per abilitare la parallelizzazione senza rompere i test
-    # Lasciamo il comportamento sequenziale come default per compatibilità.
-    parallel = False
-    max_workers = min(10, max(1, len(products)))
-
-    if parallel and len(products) > 1:
-        logger.info("Esecuzione controlli prodotti in parallelo (%d worker)", max_workers)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {}
-            for product in products:
-                futures[executor.submit(
-                    fetch_product_price,
-                    product["url"],
-                    product.get("selector_price", "span.a-price-whole"),
-                    product.get("selector_original_price", "span.a-text-price span.a-offscreen"),
-                    scraperapi_key,
-                    15,
-                    True,
-                )] = product
-
-            for fut in concurrent.futures.as_completed(futures):
-                product = futures[fut]
-                try:
-                    data = fut.result()
-                except Exception as e:
-                    logger.exception("Errore durante il controllo di %s: %s", product.get("name"), e)
-                    data = {"error": str(e)}
-                data["name"] = product["name"]
-                data["url"] = product["url"]
-                results.append(data)
-    else:
-        for product in products:
-            logger.info("Controllo prodotto: %s", product.get("name"))
-            data = fetch_product_price(
-                product["url"],
-                product.get("selector_price", "span.a-price-whole"),
-                product.get("selector_original_price", "span.a-text-price span.a-offscreen"),
-                scraperapi_key=scraperapi_key,
-            )
-            data["name"] = product["name"]
-            data["url"] = product["url"]
-            results.append(data)
-            time.sleep(2)  # Rispetta i siti tra una richiesta e l'altra
+    for product in products:
+        logger.info("Controllo prodotto: %s", product.get("name"))
+        data = fetch_product_price(
+            product["url"],
+            product.get("selector_price", "span.a-price-whole"),
+            product.get("selector_original_price", "span.a-text-price span.a-offscreen"),
+            scraperapi_key=scraperapi_key,
+        )
+        data["name"] = product["name"]
+        data["url"] = product["url"]
+        results.append(data)
+        time.sleep(2)  # Rispetta i siti tra una richiesta e l'altra
 
     return results

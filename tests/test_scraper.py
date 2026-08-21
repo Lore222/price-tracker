@@ -208,6 +208,39 @@ class ScraperParsingTests(unittest.TestCase):
         self.assertIn(749.0, prices)
         self.assertIn(599.0, prices)
 
+    def test_extract_prices_from_html_fallback_eur_format(self):
+        """Il fallback regex deve leggere anche il formato 'EUR' usato su eBay
+        Italia (es. 'EUR 1.099,00' oppure '1.099,00 EUR')."""
+        html = """
+        <div>EUR 1.099,00</div>
+        <div>1.299,00 EUR</div>
+        """
+        prices = _extract_prices_from_html_fallback(html)
+        self.assertIn(1099.0, prices)
+        self.assertIn(1299.0, prices)
+
+    def test_extract_price_data_ebay_selectors(self):
+        """Verifica che i selettori standard di eBay (BOLD per il prezzo attuale,
+        STRIKETHROUGH per quello originale) estraggano i prezzi correttamente."""
+        html = """
+        <html><body>
+            <div class="x-price-primary">
+                <span class="ux-textspans ux-textspans--BOLD">EUR 1.099,00</span>
+            </div>
+            <div class="ux-price-strike">
+                <span class="ux-textspans ux-textspans--STRIKETHROUGH">EUR 1.599,00</span>
+            </div>
+        </body></html>
+        """
+        data = extract_price_data_from_html(
+            html,
+            ["span.ux-textspans--BOLD"],
+            ["span.ux-textspans--STRIKETHROUGH"],
+        )
+        self.assertEqual(data["current_price"], 1099.0)
+        self.assertEqual(data["original_price"], 1599.0)
+        self.assertEqual(data["discount_percent"], 31.27)
+
 
 class ScraperApiIntegrationTests(unittest.TestCase):
     """Test dell'integrazione con il proxy ScraperAPI."""
