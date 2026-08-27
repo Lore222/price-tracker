@@ -110,7 +110,8 @@ chiave pubblicamente, usa la variabile d'ambiente o un **GitHub secret**
 
 | Parametro | Descrizione | Default |
 |-----------|-------------|---------|
-| `check_interval_minutes` | Intervallo controlli in minuti | 60 |
+| `check_interval_minutes` | Intervallo controlli in minuti (modalità `--loop` locale) | 60 |
+| `price_cache_minutes` | Durata cache prezzi in minuti: entro questo tempo non rifà la chiamata API per lo stesso prodotto | 60 |
 | `discount_threshold` | Soglia sconto per alert (%) | 70 |
 
 ## ▶️ Utilizzo
@@ -132,10 +133,14 @@ python main.py --summary
 
 Il progetto include due workflow GitHub Actions che funzionano senza bisogno di tenere il computer acceso:
 
-| Workflow | Schedule | Funzione |
-|----------|----------|----------|
-| `Price Tracker` | 3×/giorno (9, 15, 21 UTC, fascia diurna) | Controlla i prezzi e invia alert Telegram solo se sconto ≥ soglia |
-| `Daily Price Summary` | Ogni giorno alle 20:00 (18:00 UTC) | Invia il riepilogo di tutti i prezzi, anche senza sconto |
+| Workflow | Schedule (cron UTC) | Orari Italia | Funzione |
+|----------|----------|----------|----------|
+| `Price Tracker` | 3×/giorno: `0 9,15,21 * * *` | ~10/11, 16/17, 22/23 | Controlla i prezzi e invia alert Telegram solo se sconto ≥ soglia |
+| `Daily Price Summary` | 1×/giorno: `0 18 * * *` | 20:00 | Invia il riepilogo di tutti i prezzi, anche senza sconto |
+
+> 🌙 **Sospensione notturna**: i controlli del `Price Tracker` sono tutti in fascia diurna (9-21 UTC). Non ci sono esecuzioni nella notte italiana (00:00–08:00), così da non sprecare crediti quando i prezzi variano di meno.
+>
+> 🛡️ **Concurrency guard**: entrambi i workflow hanno `concurrency` con `cancel-in-progress`, quindi se una nuova esecuzione parte mentre una precedente è ancora in corso, quella in corso viene annullata. Evita chiamate API duplicate (ogni run consuma 1 credito ScraperAPI per prodotto).
 
 **Setup su GitHub:**
 1. Crea un repository su GitHub e pusha il progetto
@@ -158,7 +163,7 @@ price-tracker/
 ├── telegram_notifier.py       # Invio messaggi Telegram di alert e riepilogo
 ├── requirements.txt           # Dipendenze Python
 └── .github/workflows/
-    ├── price-tracker.yml      # Workflow orario (alert sconti)
+    ├── price-tracker.yml      # Workflow 3×/giorno in fascia diurna (alert sconti)
     └── daily-summary.yml      # Workflow giornaliero alle 20:00 (riepilogo)
 ```
 
@@ -168,7 +173,7 @@ price-tracker/
 - **Selettori CSS**: possono cambiare se il sito aggiorna il layout, aggiorna i selettori in `config.json`
 - **Anti-bot**: alcuni siti potrebbero bloccare lo scraping, in tal caso usa un User-Agent diverso o un proxy
 - **Telegram**: il bot token è un segreto, non condividerlo pubblicamente. Il file `config.json` è tracciato sul repository: non inserire al suo interno token o chiavi API, usa le variabili d'ambiente o i GitHub secrets
-- **GitHub Actions**: i cron job usano il fuso orario UTC. Il riepilogo delle 20:00 italiane corrisponde a `0 18 * * *` (18:00 UTC). In estate (CEST) l'Italia è UTC+2, in inverno (CET) UTC+1 — regola il cron se necessario.
+- **GitHub Actions**: i cron job usano il fuso orario UTC. Il riepilogo delle 20:00 italiane corrisponde a `0 18 * * *` (18:00 UTC). In estate (CEST) l'Italia è UTC+2, in inverno (CET) UTC+1 — regola il cron se necessario. I controlli del `Price Tracker` (9, 15, 21 UTC) cadono in Italia a ~10/11, 16/17 e 22/23 locali, sempre in fascia diurna.
 
 ## 💳 Consumo crediti ScraperAPI (piano gratuito: 1000/mese)
 
