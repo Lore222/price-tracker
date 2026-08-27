@@ -5,6 +5,11 @@ on:
   schedule:
     - cron: '0 18 * * *'
 
+# Impedisce che run sovrapposti duplichino le chiamate API.
+concurrency:
+  group: daily-summary
+  cancel-in-progress: true
+
 jobs:
   daily-summary:
     runs-on: ubuntu-latest
