@@ -11,6 +11,8 @@ from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
+_PRICE_CACHE = {}
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -82,10 +84,7 @@ def _is_anti_bot_page(html: str) -> bool:
         "captcha",
         "access denied",
         "sorry, we just need to make sure you're not a robot",
-        # Pagina di blocco/errore tipica di eBay quando nega l'accesso allo
-        # scraping (HTTP 403) con importi € casuali nel footer.
         "something went wrong on our end",
-        "api-key",
     ]
     return any(marker in text for marker in markers)
 
@@ -261,7 +260,11 @@ def _calculate_discount(current_price: Optional[float], original_price: Optional
     return round(discount, 2)
 
 
-def check_all_products(products: list, scraperapi_key: Optional[str] = None) -> list:
+def check_all_products(
+    products: list,
+    scraperapi_key: Optional[str] = None,
+    cache_ttl_minutes: int = 60,
+) -> list:
     """Controlla tutti i prodotti e restituisce quelli con sconto >= soglia.
 
     Se 'scraperapi_key' è fornita, usa il proxy ScraperAPI per tutte le richieste.
@@ -269,14 +272,29 @@ def check_all_products(products: list, scraperapi_key: Optional[str] = None) -> 
     richiesta e l'altra per rispettare i siti (evitando rate-limit/ban).
     """
     results = []
+    now = time.time()
+    cache_ttl_seconds = max(0, cache_ttl_minutes) * 60
     for product in products:
         logger.info("Controllo prodotto: %s", product.get("name"))
-        data = fetch_product_price(
+        cache_key = (
             product["url"],
             product.get("selector_price", "span.a-price-whole"),
             product.get("selector_original_price", "span.a-text-price span.a-offscreen"),
-            scraperapi_key=scraperapi_key,
+            scraperapi_key,
         )
+        cached = _PRICE_CACHE.get(cache_key)
+        if cached and now - cached["timestamp"] < cache_ttl_seconds:
+            data = cached["data"].copy()
+            logger.info("Uso prezzo in cache per: %s", product.get("name"))
+        else:
+            data = fetch_product_price(
+                product["url"],
+                cache_key[1],
+                cache_key[2],
+                scraperapi_key=scraperapi_key,
+            )
+            if not data.get("error"):
+                _PRICE_CACHE[cache_key] = {"timestamp": now, "data": data.copy()}
         data["name"] = product["name"]
         data["url"] = product["url"]
         results.append(data)

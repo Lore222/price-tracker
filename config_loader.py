@@ -79,9 +79,14 @@ def load_config(config_path: str = "config.json") -> Dict[str, Any]:
     if threshold is not None:
         config["discount_threshold"] = _safe_float_env("DISCOUNT_THRESHOLD", 70.0)
 
+    cache_minutes = os.getenv("PRICE_CACHE_MINUTES")
+    if cache_minutes is not None:
+        config["price_cache_minutes"] = _safe_int_env("PRICE_CACHE_MINUTES", 60)
+
     config.setdefault("telegram", {})
     config.setdefault("check_interval_minutes", 60)
     config.setdefault("discount_threshold", 70)
+    config.setdefault("price_cache_minutes", 60)
     config.setdefault("products", [])
 
     # Chiave API ScraperAPI (opzionale). Priorità alla variabile d'ambiente

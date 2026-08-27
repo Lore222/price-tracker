@@ -7,6 +7,7 @@ from scraper import (
     _get_via_scraperapi,
     _is_anti_bot_page,
     _parse_price,
+    check_all_products,
     extract_price_data_from_html,
     fetch_product_price,
 )
@@ -296,6 +297,11 @@ class ScraperApiIntegrationTests(unittest.TestCase):
         html = '<html><body><span class="a-price-whole">649,00</span></body></html>'
         self.assertFalse(_is_anti_bot_page(html))
 
+    def test_is_anti_bot_page_does_not_flag_robot_product_title(self):
+        """La parola 'robot' nel titolo di un prodotto non indica un blocco."""
+        html = '<html><title>Robot aspirapolvere</title><span class="a-price-whole">399</span></html>'
+        self.assertFalse(_is_anti_bot_page(html))
+
     def test_fetch_product_price_returns_error_on_anti_bot_page(self):
         """Regressione: su una pagina anti-bot con importi € casuali, il bot deve
         restituire un errore chiaro e NON un prezzo falso (es. €10.0)."""
@@ -313,6 +319,24 @@ class ScraperApiIntegrationTests(unittest.TestCase):
             self.assertIn("error", data)
             self.assertIn("anti-bot", data["error"])
             self.assertNotIn("current_price", data)
+
+
+class PriceCacheTests(unittest.TestCase):
+    def test_reuses_price_within_cache_window(self):
+        product = {
+            "name": "Test product",
+            "url": "https://example.com/unique-cache-test",
+            "selector_price": "span.price",
+        }
+        fetched_data = {"current_price": 10.0, "original_price": None, "discount_percent": None}
+
+        with mock.patch("scraper.fetch_product_price", return_value=fetched_data) as mocked_fetch:
+            with mock.patch("scraper.time.sleep"):
+                first_results = check_all_products([product], cache_ttl_minutes=60)
+                second_results = check_all_products([product], cache_ttl_minutes=60)
+
+        mocked_fetch.assert_called_once()
+        self.assertEqual(first_results, second_results)
 
 
 if __name__ == "__main__":

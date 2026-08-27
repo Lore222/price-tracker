@@ -4,6 +4,7 @@
     "chat_id": "123456789,987654321"
   },
   "check_interval_minutes": 60,
+  "price_cache_minutes": 60,
   "discount_threshold": 70,
   "scraperapi": {
     "api_key": "IL_TUO_API_KEY_SCRAPERAPI"

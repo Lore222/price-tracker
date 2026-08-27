@@ -71,6 +71,23 @@ class ConfigLoaderTests(unittest.TestCase):
             self.assertEqual(config["telegram"]["chat_id"], "169943050")
             self.assertEqual(len(config["products"]), 1)
 
+    def test_load_config_exposes_nested_scraperapi_key(self):
+        """La chiave nella sezione scraperapi viene resa disponibile al runner."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = os.path.join(tmpdir, "config.json")
+            config_data = {
+                "scraperapi": {"api_key": "config-key"},
+                "telegram": {"bot_token": "123456:ABC", "chat_id": "169943050"},
+                "products": [{"name": "Test", "url": "https://example.com"}],
+            }
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(config_data, f)
+
+            with patch.dict(os.environ, {}, clear=True):
+                config = load_config(config_path)
+
+            self.assertEqual(config["scraperapi_key"], "config-key")
+
     def test_load_config_invalid_env_int(self):
         """Test che una variabile d'ambiente non numerica sollevi ValueError."""
         with tempfile.TemporaryDirectory() as tmpdir:
