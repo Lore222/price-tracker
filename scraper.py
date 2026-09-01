@@ -5,8 +5,6 @@ import logging
 from typing import Dict, List, Optional
 
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
@@ -165,7 +163,6 @@ def fetch_product_price(
     original_price_selector,
     scraperapi_key: Optional[str] = None,
     timeout: int = 15,
-    use_session: bool = False,
 ) -> Dict:
     """Recupera prezzo attuale e prezzo originale da una pagina prodotto.
 
@@ -180,26 +177,10 @@ def fetch_product_price(
 
     for attempt in range(max_retries):
         try:
-            if use_session:
-                # Crea una session con retry/backoff per richieste concorrenti
-                session = requests.Session()
-                retries = Retry(total=3, backoff_factor=0.5,
-                                status_forcelist=(429, 500, 502, 503, 504),
-                                allowed_methods=frozenset(["GET", "POST"]))
-                adapter = HTTPAdapter(max_retries=retries)
-                session.mount("https://", adapter)
-                session.mount("http://", adapter)
-
-                if scraperapi_key:
-                    response = session.get(SCRAPERAPI_ENDPOINT, params={"api_key": scraperapi_key, "url": url}, timeout=timeout)
-                else:
-                    response = session.get(url, headers=HEADERS, timeout=timeout)
-                session.close()
+            if scraperapi_key:
+                response = _get_via_scraperapi(url, scraperapi_key, timeout=timeout)
             else:
-                if scraperapi_key:
-                    response = _get_via_scraperapi(url, scraperapi_key, timeout=timeout)
-                else:
-                    response = requests.get(url, headers=HEADERS, timeout=timeout)
+                response = requests.get(url, headers=HEADERS, timeout=timeout)
             response.raise_for_status()
             break
         except requests.RequestException as e:

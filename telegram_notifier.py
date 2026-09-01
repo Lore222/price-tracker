@@ -8,8 +8,35 @@ TELEGRAM_API = "https://api.telegram.org/bot{token}/sendMessage"
 logger = logging.getLogger(__name__)
 
 
-def _escape_text(value: str) -> str:
+def _escape_text(value) -> str:
     return html.escape(str(value), quote=True)
+
+
+def _format_price(value) -> str:
+    """Formatta un prezzo in stile italiano (es. 1.234,56).
+
+    Restituisce 'N/D' quando il valore non è disponibile (None), così da non
+    comparire mai nei messaggi come '€None'.
+    """
+    if value is None:
+        return "N/D"
+    try:
+        num = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    integer, decimal = f"{num:.2f}".split(".")
+    return f"{int(integer):,}".replace(",", ".") + "," + decimal
+
+
+def _format_percent(value) -> str:
+    """Formatta una percentuale in stile italiano (es. 13,35% -> 13,35)."""
+    if value is None:
+        return "N/D"
+    try:
+        num = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    return f"{num:.2f}".rstrip("0").rstrip(".").replace(".", ",")
 
 
 def _send_telegram_message(config: Dict, text: str) -> bool:
@@ -59,20 +86,23 @@ def _build_deals_message(config: Dict, deals: List[Dict]) -> str:
     """Costruisce il testo del messaggio Telegram con le offerte trovate."""
     lines = [
         "🔥 <b>OFFERTE IMPERDIBILI!</b>",
-        f"Trovate <b>{len(deals)}</b> offerte con sconto ≥ {config['discount_threshold']}%",
+        f"Trovate <b>{len(deals)}</b> offerte con sconto ≥ {_format_percent(config['discount_threshold'])}%",
         "─────────────────────────",
     ]
 
     for deal in deals:
-        discount = deal.get("discount_percent", 0)
+        discount = _format_percent(deal.get("discount_percent"))
         name = _escape_text(deal.get("name", "N/D"))
-        current = _escape_text(deal.get("current_price", "N/D"))
-        original = _escape_text(deal.get("original_price", "N/D"))
+        current = _format_price(deal.get("current_price"))
+        original = _format_price(deal.get("original_price"))
         url = _escape_text(deal.get("url", ""))
 
         lines.append(f"📦 <b>{name}</b>")
-        lines.append(f"💶 Prezzo: <s>€{original}</s> → <b>€{current}</b>")
-        lines.append(f"🏷️ Sconto: <b>{discount}%</b>")
+        if original != "N/D":
+            lines.append(f"💶 Prezzo: <s>€{_escape_text(original)}</s> → <b>€{_escape_text(current)}</b>")
+        else:
+            lines.append(f"💶 Prezzo attuale: <b>€{_escape_text(current)}</b>")
+        lines.append(f"🏷️ Sconto: <b>{_escape_text(discount)}%</b>")
         lines.append(f"🔗 <a href=\"{url}\">Vai all'offerta</a>")
         lines.append("─────────────────────────")
 
@@ -96,12 +126,15 @@ def _build_summary_message(config: Dict, products: List[Dict]) -> str:
         if item.get("error"):
             lines.append(f"❌ Errore: {_escape_text(item['error'])}")
         else:
-            current = _escape_text(item.get("current_price", "N/D"))
-            original = _escape_text(item.get("original_price", "N/D"))
-            discount = item.get("discount_percent")
-            discount_text = f" - <b>{discount}%</b>" if discount is not None else ""
-            lines.append(f"💶 Prezzo attuale: <b>€{current}</b>")
-            lines.append(f"💸 Prezzo originale: €{original}{discount_text}")
+            current = _format_price(item.get("current_price"))
+            original = _format_price(item.get("original_price"))
+            discount = _format_percent(item.get("discount_percent"))
+            discount_text = f" - <b>{_escape_text(discount)}%</b>" if discount != "N/D" else ""
+            lines.append(f"💶 Prezzo attuale: <b>€{_escape_text(current)}</b>")
+            if original != "N/D":
+                lines.append(f"💸 Prezzo originale: €{_escape_text(original)}{discount_text}")
+            else:
+                lines.append(f"💸 Prezzo originale: non disponibile{discount_text}")
 
         lines.append(f"🔗 <a href=\"{url}\">Vai al prodotto</a>")
         lines.append("─────────────────────────")

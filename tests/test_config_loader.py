@@ -166,6 +166,66 @@ class ConfigLoaderTests(unittest.TestCase):
 
             self.assertIn("name", str(ctx.exception))
 
+    def test_load_config_product_not_a_dict(self):
+        """Test che un prodotto non-dict sollevi ValueError invece di TypeError."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = os.path.join(tmpdir, "config.json")
+            config_data = {"products": ["not-a-dict"]}
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(config_data, f)
+
+            with self.assertRaises(ValueError) as ctx:
+                load_config(config_path)
+
+            self.assertIn("Prodotto 1", str(ctx.exception))
+
+    def test_load_config_invalid_product_url(self):
+        """Test che un URL non valido sollevi ValueError."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = os.path.join(tmpdir, "config.json")
+            config_data = {
+                "products": [{"name": "Test", "url": "not-a-url"}]
+            }
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(config_data, f)
+
+            with self.assertRaises(ValueError) as ctx:
+                load_config(config_path)
+
+            self.assertIn("URL non valida", str(ctx.exception))
+
+    def test_load_config_empty_product_name(self):
+        """Test che un name vuoto sollevi ValueError."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = os.path.join(tmpdir, "config.json")
+            config_data = {
+                "products": [{"name": "   ", "url": "https://example.com"}]
+            }
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(config_data, f)
+
+            with self.assertRaises(ValueError) as ctx:
+                load_config(config_path)
+
+            self.assertIn("name", str(ctx.exception))
+
+    def test_load_config_invalid_selector_type(self):
+        """Test che un selettore non-stringa sollevi ValueError."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = os.path.join(tmpdir, "config.json")
+            config_data = {
+                "products": [
+                    {"name": "Test", "url": "https://example.com", "selector_price": 123}
+                ]
+            }
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(config_data, f)
+
+            with self.assertRaises(ValueError) as ctx:
+                load_config(config_path)
+
+            self.assertIn("selector_price", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

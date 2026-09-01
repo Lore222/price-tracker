@@ -10,6 +10,7 @@ Programma Python che monitora i prezzi su vari siti e-commerce e invia messaggi 
 - 📨 Invio messaggi Telegram con le offerte trovate (solo se sconto ≥ soglia)
 - 🗓️ Riepilogo prezzi giornaliero alle 20:00 via GitHub Actions (sempre inviato)
 - 🎯 Soglia sconto configurabile (default: 70%)
+- 🔁 Niente alert duplicati: ogni offerta viene notificata una sola volta (o di nuovo solo se lo sconto migliora di almeno 2 punti). Lo stato è salvato in `state.json` e, su GitHub Actions, persistito tra una run e l'altra tramite artifact.
 - 🌐 Supporto multi-sito (Amazon, eBay, e altri)
 - 📊 Calcolo automatico della percentuale di sconto
 - 🛡️ Gestione errori di rete e parsing
@@ -156,11 +157,12 @@ Il progetto include due workflow GitHub Actions che funzionano senza bisogno di 
 
 ```
 price-tracker/
-├── main.py                    # Punto di ingresso con scheduler
+├── main.py                    # Punto di ingresso con scheduler + dedup alert
 ├── config.json                # Configurazione Telegram e prodotti
 ├── config_loader.py           # Caricamento e validazione configurazione
 ├── scraper.py                 # Estrazione prezzi dai siti
 ├── telegram_notifier.py       # Invio messaggi Telegram di alert e riepilogo
+├── state_store.py             # Persistenza stato (dedup notifiche) in state.json
 ├── requirements.txt           # Dipendenze Python
 └── .github/workflows/
     ├── price-tracker.yml      # Workflow 3×/giorno in fascia diurna (alert sconti)

@@ -7,6 +7,7 @@ import time
 
 from config_loader import load_config
 from scraper import check_all_products
+from state_store import DEFAULT_STATE_FILE, StateStore
 
 # Configurazione logging
 logging.basicConfig(
@@ -19,6 +20,32 @@ logging.basicConfig(
     ],
 )
 logger = logging.getLogger(__name__)
+
+
+def _filter_unnotified(state_store: StateStore, deals: list, min_improvement: float = 2.0) -> list:
+    """Filtra le offerte già notificate e non migliorate.
+
+    Un'offerta viene notificata se:
+      - non è mai stata notificata per quell'URL, oppure
+      - lo sconto è migliorato di almeno 'min_improvement' punti rispetto
+        all'ultima notifica (così un prezzo che scende di nuovo provoca un
+        nuovo alert invece di essere soppresso per sempre).
+
+    Lo stato viene aggiornato e salvato su disco.
+    """
+    to_notify = []
+    for deal in deals:
+        url = deal.get("url")
+        key = f"offer:{url}" if url else f"offer:{deal.get('name')}"
+        prev = state_store.get(key)
+        current = deal.get("discount_percent")
+        if prev is None or (current is not None and (current - prev) >= min_improvement):
+            to_notify.append(deal)
+            if current is not None:
+                state_store.set(key, current)
+    if to_notify:
+        state_store.save()
+    return to_notify
 
 
 def run_check(config):
@@ -56,9 +83,15 @@ def run_check(config):
                             r["name"], r["current_price"])
 
     if deals:
-        logger.info("🎯 Trovate %d offerte con sconto ≥ %s%%!", len(deals), threshold)
-        from telegram_notifier import send_telegram_alert
-        send_telegram_alert(config, deals)
+        state_store = StateStore(os.getenv("PRICE_STATE_FILE", DEFAULT_STATE_FILE))
+        deals_to_notify = _filter_unnotified(state_store, deals)
+        if deals_to_notify:
+            logger.info("🎯 Trovate %d nuove offerte con sconto ≥ %s%%!",
+                        len(deals_to_notify), threshold)
+            from telegram_notifier import send_telegram_alert
+            send_telegram_alert(config, deals_to_notify)
+        else:
+            logger.info("😴 Offerte già notificate e invariate: nessun nuovo alert.")
     else:
         logger.info("😴 Nessuna offerta con sconto ≥ %s%% in questo momento.", threshold)
 

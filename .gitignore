@@ -5,5 +5,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 price_tracker.log
+state.json
+state.json.tmp
 .env
 .DS_Store

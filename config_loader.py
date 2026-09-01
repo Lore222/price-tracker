@@ -1,6 +1,7 @@
 import json
 import os
 from typing import Dict, Any
+from urllib.parse import urlparse
 
 
 def _safe_int_env(var_name: str, default: int) -> int:
@@ -53,6 +54,39 @@ def _validate_telegram_config(telegram_config: Dict[str, Any]) -> None:
         raise ValueError(f"Configurazione Telegram incompleta: mancano i seguenti campi: {', '.join(missing)}")
 
 
+def _validate_products(products) -> None:
+    """Valida la lista di prodotti in modo robusto.
+
+    Verifica che ogni elemento sia un dict, abbia 'name' e 'url' non vuoti
+    con URL http/https valida, e che gli eventuali selettori siano stringhe.
+    """
+    if not isinstance(products, list):
+        raise ValueError("La lista 'products' deve essere una lista")
+
+    for idx, product in enumerate(products, start=1):
+        if not isinstance(product, dict):
+            raise ValueError(f"Prodotto {idx} deve essere un oggetto con i campi 'name' e 'url'")
+
+        name = product.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(f"Prodotto {idx}: campo 'name' mancante o non è una stringa non vuota")
+
+        url = product.get("url")
+        if not isinstance(url, str) or not url.strip():
+            raise ValueError(
+                f"Prodotto {idx} ('{name}'): ogni prodotto deve avere 'name' e 'url'; campo 'url' mancante o non è una stringa"
+            )
+
+        parsed = urlparse(url.strip())
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            raise ValueError(f"Prodotto {idx} ('{name}'): URL non valida: {url}")
+
+        for field in ("selector_price", "selector_original_price"):
+            selector = product.get(field)
+            if selector is not None and not (isinstance(selector, str) and selector.strip()):
+                raise ValueError(f"Prodotto {idx} ('{name}'): '{field}' deve essere una stringa")
+
+
 def load_config(config_path: str = "config.json") -> Dict[str, Any]:
     """Carica e valida la configurazione, usando valori di default o variabili d'ambiente."""
     if os.path.exists(config_path):
@@ -100,9 +134,7 @@ def load_config(config_path: str = "config.json") -> Dict[str, Any]:
     if not isinstance(config["products"], list):
         raise ValueError("La lista 'products' deve essere una lista")
 
-    for product in config["products"]:
-        if "name" not in product or "url" not in product:
-            raise ValueError("Ogni prodotto deve avere 'name' e 'url'")
+    _validate_products(config["products"])
 
     # Valida Telegram solo se ci sono prodotti configurati (se non ci sono prodotti, non serve notificare)
     if config["products"]:

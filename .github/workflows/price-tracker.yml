@@ -55,10 +55,29 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Download previous state
+        uses: actions/download-artifact@v4
+        with:
+          name: price-tracker-state
+          path: ./
+        continue-on-error: true
+
       - name: Run price tracker
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           SCRAPERAPI_API_KEY: ${{ secrets.SCRAPERAPI_API_KEY }}
+          PRICE_STATE_FILE: state.json
         run: |
           python main.py
+
+      # Persisto lo stato delle notifiche tra una run e l'altra (dedup alert).
+      # L'upload gira anche se la run fallisce, così lo stato non va perso.
+      - name: Upload state
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: price-tracker-state
+          path: state.json
+          if-no-files-found: ignore
+          overwrite: true
