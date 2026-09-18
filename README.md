@@ -136,10 +136,12 @@ Il progetto include due workflow GitHub Actions che funzionano senza bisogno di 
 
 | Workflow | Schedule (cron UTC) | Orari Italia | Funzione |
 |----------|----------|----------|----------|
-| `Price Tracker` | 3×/giorno: `0 9,15,21 * * *` | ~10/11, 16/17, 22/23 | Controlla i prezzi e invia alert Telegram solo se sconto ≥ soglia |
-| `Daily Price Summary` | 1×/giorno: `0 18 * * *` | 20:00 | Invia il riepilogo di tutti i prezzi, anche senza sconto |
+| `Price Tracker` | 1×/giorno: `0 12 * * *` ⚠️ | 14:00/13:00 | Controlla i prezzi e invia alert Telegram solo se sconto ≥ soglia |
+| `Daily Price Summary` | **Sospeso** ⚠️ (riavviabile a mano) | – | Riepilogo di tutti i prezzi, anche senza sconto |
 
-> 🌙 **Sospensione notturna**: i controlli del `Price Tracker` sono tutti in fascia diurna (9-21 UTC). Non ci sono esecuzioni nella notte italiana (00:00–08:00), così da non sprecare crediti quando i prezzi variano di meno.
+> ⚠️ **RIDUZIONE TEMPORANEA (fino al 13/10)**: per non esaurire i 1000 crediti ScraperAPI mensili prima del reset, il `Price Tracker` è stato ridotto a **1 controllo/giorno** e il `Daily Price Summary` è stato **sospeso**. Dal 13/10 ripristinare i 3 controlli (`0 9,15,21 * * *`) e il riepilogo (`0 18 * * *`) come da commenti nei workflow.
+
+> 🌙 **Sospensione notturna**: i controlli del `Price Tracker` sono in fascia diurna. Non ci sono esecuzioni nella notte italiana (00:00–08:00).
 >
 > 🛡️ **Concurrency guard**: entrambi i workflow hanno `concurrency` con `cancel-in-progress`, quindi se una nuova esecuzione parte mentre una precedente è ancora in corso, quella in corso viene annullata. Evita chiamate API duplicate (ogni run consuma 1 credito ScraperAPI per prodotto).
 
@@ -179,7 +181,9 @@ price-tracker/
 
 ## 💳 Consumo crediti ScraperAPI (piano gratuito: 1000/mese)
 
-Ogni run consuma **1 credito per ogni prodotto** in `config.json` (8 con la configurazione di default). Con la schedule corrente:
+Ogni run consuma **1 credito per ogni prodotto** in `config.json` (8 con la configurazione di default).
+
+**Configurazione normale (dopo il 13/10):**
 
 | Voce | Run/giorno | Crediti/giorno |
 |------|------------|----------------|
@@ -189,7 +193,17 @@ Ogni run consuma **1 credito per ogni prodotto** in `config.json` (8 con la conf
 
 → **~32 × 30 = ~960 crediti/mese**, dentro i 1000 ma con poco margine.
 
-> 💡 Se hai bisogno di più respiro, riduci il numero di prodotti: ogni prodotto tolto risparmia 4 crediti/giorno (3 controlli + 1 riepilogo), cioè ~120/mese.
+**Riduzione temporanea (fino al 13/10 per rientrare nel saldo residuo):**
+
+| Voce | Run/giorno | Crediti/giorno |
+|------|------------|----------------|
+| `Price Tracker` (12 UTC) | 1 | 1 × 8 = 8 |
+| `Daily Price Summary` | sospeso | 0 |
+| **Totale** | | **~8/giorno** |
+
+→ **~8 × 25 = ~200 crediti nei 25 giorni fino al reset del 13/10.**
+
+> 💡 Se hai bisogno di più respiro, riduci il numero di prodotti: ogni prodotto tolto risparmia 4 crediti/giorno (3 controlli + 1 riepilogo), cioè ~120/mese. Nella riduzione temporanea, togliere 1 prodotto risparmia 1 credito/giorno.
 
 ## 🔒 Privacy
 

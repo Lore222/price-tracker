@@ -2,8 +2,10 @@ name: Daily Price Summary
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 18 * * *'
+  # schedule:
+  #   # Sospeso temporaneamente fino al reset dei crediti (13/10).
+  #   # DAL 13/10 ripristinare: - cron: '0 18 * * *'
+  #   - cron: '0 18 * * *'
 
 # Impedisce che run sovrapposti duplichino le chiamate API.
 concurrency:

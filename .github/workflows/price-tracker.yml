@@ -3,10 +3,10 @@ name: Price Tracker
 on:
   workflow_dispatch:
   schedule:
-    # Tre controlli al giorno in fascia diurna: 9, 15 e 21 UTC.
-    # In Italia (CET/CEST) equivalgono a 10/11-16/17-22/23 locali,
-    # quindi la notte (00-08) resta coperta dalla sospensione.
-    - cron: '0 9,15,21 * * *'
+    # RIDUZIONE TEMPORANEA per non esaurire i crediti prima del reset (13/10).
+    # 1 controllo al giorno a mezzogiorno UTC (14:00/13:00 italiane).
+    # DAL 13/10 ripristinare i 3 controlli: '0 9,15,21 * * *'
+    - cron: '0 12 * * *'
 
 # Impedisce che più run si sovrappongano: se parte una nuova esecuzione
 # mentre una è già in corso, quella in corso viene annullata. Evita
