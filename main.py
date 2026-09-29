@@ -86,14 +86,14 @@ def run_check(config):
         state_store = StateStore(os.getenv("PRICE_STATE_FILE", DEFAULT_STATE_FILE))
         deals_to_notify = _filter_unnotified(state_store, deals)
         if deals_to_notify:
-            logger.info("🎯 Trovate %d nuove offerte con sconto ≥ %s%%!",
+            logger.info("🎯 Trovate %d nuove offerte con sconto ≥ %g%%!",
                         len(deals_to_notify), threshold)
             from telegram_notifier import send_telegram_alert
             send_telegram_alert(config, deals_to_notify)
         else:
             logger.info("😴 Offerte già notificate e invariate: nessun nuovo alert.")
     else:
-        logger.info("😴 Nessuna offerta con sconto ≥ %s%% in questo momento.", threshold)
+        logger.info("😴 Nessuna offerta con sconto ≥ %g%% in questo momento.", threshold)
 
 
 def run_summary(config):
@@ -142,7 +142,7 @@ def main():
     logger.info("🚀 Avvio monitoraggio prezzi")
     logger.info("   Modalità: %s", "loop continuo" if continuous else "esecuzione singola")
     logger.info("   Intervallo: ogni %d minuti", interval)
-    logger.info("   Soglia sconto: %s%%", config["discount_threshold"])
+    logger.info("   Soglia sconto: %g%%", config["discount_threshold"])
     logger.info("   Prodotti monitorati: %d", len(config["products"]))
     if continuous:
         logger.info("   Premi Ctrl+C per fermare\n")

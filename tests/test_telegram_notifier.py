@@ -1,10 +1,14 @@
 import unittest
+from unittest import mock
+
+import requests
 
 from telegram_notifier import (
     _build_deals_message,
     _build_summary_message,
     _format_percent,
     _format_price,
+    send_telegram_alert,
 )
 
 
@@ -92,6 +96,61 @@ class TelegramNotifierTests(unittest.TestCase):
         self.assertIn("€649,00", msg)
         self.assertNotIn("€None", msg)
         self.assertNotIn("€N/D", msg)
+
+
+class TelegramSecretRedactionTests(unittest.TestCase):
+    def _deals(self):
+        return [
+            {
+                "name": "Prodotto",
+                "url": "https://amazon.it/dp/Y",
+                "current_price": 100.0,
+                "original_price": 500.0,
+                "discount_percent": 80.0,
+            }
+        ]
+
+    def _config(self, token):
+        return {"telegram": {"bot_token": token, "chat_id": "1"}, "discount_threshold": 70}
+
+    def test_bot_token_is_not_logged_on_network_error(self):
+        """Sicurezza: il token del bot è nell'URL di Telegram e le eccezioni di
+        requests lo includono: non deve finire nei log."""
+        token = "123456789:AAFakeTokenForRedactionTest"
+
+        def fail(*args, **kwargs):
+            raise requests.ConnectionError(
+                f"Max retries exceeded with url: /bot{token}/sendMessage"
+            )
+
+        with mock.patch("telegram_notifier.requests.post", side_effect=fail), \
+                self.assertLogs("telegram_notifier", level="ERROR") as captured:
+            ok = send_telegram_alert(self._config(token), self._deals())
+
+        self.assertFalse(ok)
+        self.assertNotIn(token, "\n".join(captured.output))
+
+    def test_bot_token_is_not_logged_on_http_error(self):
+        """Sicurezza: anche una risposta HTTP di errore (401/400) contiene il
+        token nell'URL e non deve comparire nei log."""
+        token = "123456789:AAFakeTokenForRedactionTest"
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+
+        class FakeResponse:
+            def raise_for_status(self):
+                raise requests.HTTPError(
+                    f"401 Client Error: Unauthorized for url: {url}"
+                )
+
+            def json(self):
+                return {"ok": False, "description": "Unauthorized"}
+
+        with mock.patch("telegram_notifier.requests.post", return_value=FakeResponse()), \
+                self.assertLogs("telegram_notifier", level="ERROR") as captured:
+            ok = send_telegram_alert(self._config(token), self._deals())
+
+        self.assertFalse(ok)
+        self.assertNotIn(token, "\n".join(captured.output))
 
 
 if __name__ == "__main__":

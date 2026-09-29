@@ -226,6 +226,72 @@ class ConfigLoaderTests(unittest.TestCase):
 
             self.assertIn("selector_price", str(ctx.exception))
 
+    def test_load_config_coerces_numeric_strings_from_file(self):
+        """Regressione: valori numerici come stringhe nel file devono essere
+        convertiti, non far crashare il programma a runtime con un TypeError."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = os.path.join(tmpdir, "config.json")
+            config_data = {
+                "telegram": {"bot_token": "123456:ABC", "chat_id": "169943050"},
+                "check_interval_minutes": "60",
+                "price_cache_minutes": "30",
+                "discount_threshold": "70",
+                "products": [{"name": "Test", "url": "https://example.com"}],
+            }
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(config_data, f)
+
+            config = load_config(config_path)
+
+            self.assertEqual(config["check_interval_minutes"], 60)
+            self.assertIsInstance(config["check_interval_minutes"], int)
+            self.assertEqual(config["price_cache_minutes"], 30)
+            self.assertIsInstance(config["price_cache_minutes"], int)
+            self.assertEqual(config["discount_threshold"], 70.0)
+            # Il confronto usato in main.py non deve sollevare TypeError.
+            self.assertTrue(80.0 >= config["discount_threshold"])
+
+    def test_load_config_rejects_non_numeric_value_from_file(self):
+        """Un valore non numerico nel file deve sollevare ValueError con il nome del campo."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = os.path.join(tmpdir, "config.json")
+            config_data = {
+                "telegram": {"bot_token": "123456:ABC", "chat_id": "169943050"},
+                "check_interval_minutes": "abc",
+                "products": [{"name": "Test", "url": "https://example.com"}],
+            }
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(config_data, f)
+
+            with self.assertRaises(ValueError) as ctx:
+                load_config(config_path)
+
+            self.assertIn("check_interval_minutes", str(ctx.exception))
+
+    def test_load_config_rejects_out_of_range_values(self):
+        """Intervallo e cache devono essere positivi, la soglia entro 0-100."""
+        cases = [
+            ({"check_interval_minutes": 0}, "check_interval_minutes"),
+            ({"price_cache_minutes": -1}, "price_cache_minutes"),
+            ({"discount_threshold": 150}, "discount_threshold"),
+        ]
+        for overrides, expected_field in cases:
+            with self.subTest(field=expected_field):
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    config_path = os.path.join(tmpdir, "config.json")
+                    config_data = {
+                        "telegram": {"bot_token": "123456:ABC", "chat_id": "169943050"},
+                        "products": [{"name": "Test", "url": "https://example.com"}],
+                    }
+                    config_data.update(overrides)
+                    with open(config_path, "w", encoding="utf-8") as f:
+                        json.dump(config_data, f)
+
+                    with self.assertRaises(ValueError) as ctx:
+                        load_config(config_path)
+
+                    self.assertIn(expected_field, str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

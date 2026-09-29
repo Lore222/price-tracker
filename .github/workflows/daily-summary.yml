@@ -12,6 +12,10 @@ concurrency:
   group: daily-summary
   cancel-in-progress: true
 
+# Permessi minimi per il GITHUB_TOKEN: al workflow serve solo leggere il codice.
+permissions:
+  contents: read
+
 jobs:
   daily-summary:
     runs-on: ubuntu-latest
@@ -19,6 +23,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v6

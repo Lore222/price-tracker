@@ -47,10 +47,10 @@
       "selector_original_price": "span.a-text-price span.a-offscreen"
     },
     {
-      "name": "Dreame L50 Ultra (eBay)",
-      "url": "https://www.ebay.it/itm/820012880111",
-      "selector_price": "span.ux-textspans--BOLD",
-      "selector_original_price": "span.ux-textspans--STRIKETHROUGH"
+      "name": "Dreame X50 Ultra Complete",
+      "url": "https://www.amazon.it/DREAME-Aspirapolvere-Rilevamento-Navigazione-Antigroviglio/dp/B0DPB7RN2L/ref=sr_1_1_sspa?crid=22WVGSO7O5RJV&dib=eyJ2IjoiMSJ9.K51eJnZJ8WtmALF2Jyf87W3NoysQOZzq9igcD84jHFm2b_DgdCWdJ6Uy7bc_KKmEq3nMXB6Tzjr3w7XtyJi2EmMb3Z8-eJu6RLM-h_uxdrtHBtbD8vLcyZGGwOlEIre_qoTDYbhCtbUaN1dHgd7BkGrrEhPGQTfHwvl2g-VUa0r_fX2j7zuAdcy5KJ81zHgxR1O21jnGkMD1O-YBj0qKn3_hi_SAg9O81VuA9OtJmkNWyC8acUkbEQ9AcPv91e7ld6g0kg8t2fgBqxbCJ2gVIDHbj2TaqBNJvf3-vqGHJSQ.4dcvYBupdoccZFkZsEFZNpxhQJZBDkwFduYUX44b1-E&dib_tag=se&keywords=dreame%2Bx50%2Bultra%2Bcomplete&qid=1790668508&sprefix=dreame%2Bx50%2Caps%2C192&sr=8-1-spons&aref=Roa5zDTnbX&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&th=1",
+      "selector_price": "span.a-price-whole",
+      "selector_original_price": "span.a-text-price span.a-offscreen"
     }
   ]
 }

@@ -12,6 +12,20 @@ def _escape_text(value) -> str:
     return html.escape(str(value), quote=True)
 
 
+def _redact_secrets(text, *secrets) -> str:
+    """Nasconde i segreti (es. bot token) nei messaggi di log.
+
+    Il token del bot è parte dell'URL delle API Telegram e le eccezioni di
+    'requests' lo includono nel messaggio: senza questa redazione il token
+    finirebbe nei log (file locale e log di GitHub Actions).
+    """
+    text = str(text)
+    for secret in secrets:
+        if secret:
+            text = text.replace(str(secret), "***")
+    return text
+
+
 def _format_price(value) -> str:
     """Formatta un prezzo in stile italiano (es. 1.234,56).
 
@@ -74,10 +88,16 @@ def _send_telegram_message(config: Dict, text: str) -> bool:
             if data.get("ok"):
                 logger.info("Messaggio Telegram inviato a %s", chat_id)
             else:
-                logger.error("Errore invio Telegram a %s: %s", chat_id, data)
+                logger.error("Errore invio Telegram a %s: %s", chat_id, _redact_secrets(data, bot_token))
                 all_ok = False
         except Exception as e:
-            logger.exception("Errore invio Telegram a %s: %s", chat_id, e)
+            # Niente traceback/str(e) grezzi: contengono l'URL con il bot token.
+            logger.error(
+                "Errore invio Telegram a %s: %s: %s",
+                chat_id,
+                type(e).__name__,
+                _redact_secrets(e, bot_token),
+            )
             all_ok = False
     return all_ok
 

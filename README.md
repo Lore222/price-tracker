@@ -115,6 +115,12 @@ chiave pubblicamente, usa la variabile d'ambiente o un **GitHub secret**
 | `price_cache_minutes` | Durata cache prezzi in minuti: entro questo tempo non rifà la chiamata API per lo stesso prodotto | 60 |
 | `discount_threshold` | Soglia sconto per alert (%) | 70 |
 
+> 💡 I valori numerici possono essere scritti come numeri o come stringhe numeriche
+> (es. `"60"`) e vengono convertiti automaticamente. Range validi:
+> `check_interval_minutes` ≥ 1, `price_cache_minutes` ≥ 0 (0 = cache disattivata),
+> `discount_threshold` tra 0 e 100. Un valore non valido viene segnalato subito
+> all'avvio con un messaggio chiaro, invece di far crashare il programma a metà esecuzione.
+
 ## ▶️ Utilizzo
 
 ### Esecuzione locale
@@ -210,3 +216,5 @@ Ogni run consuma **1 credito per ogni prodotto** in `config.json` (8 con la conf
 - Il bot token Telegram non va salvato in `config.json` (tracciato sul repository): usa le variabili d'ambiente o i GitHub secrets
 - Su GitHub Actions il token è salvato come secret del repository (mai esposto nei log)
 - Se configuri una chiave ScraperAPI, le richieste passano dal proxy di ScraperAPI (servizio di terze parti) per evitare blocchi anti-bot; senza chiave le richieste vanno direttamente ai siti e-commerce configurati
+- I segreti (bot token Telegram, chiave ScraperAPI) vengono **rimossi automaticamente** (`***`) dai log e dai messaggi di errore: le eccezioni di `requests` includono l'URL completo della richiesta e, senza questa redazione, token e chiave finirebbero in `price_tracker.log`, nei log di GitHub Actions e nei messaggi Telegram
+- I workflow GitHub Actions usano **permessi minimi** (`contents: read`, più `actions: write` solo nel job che salva l'artifact di stato) e il checkout **non conserva le credenziali** nel workspace (`persist-credentials: false`)

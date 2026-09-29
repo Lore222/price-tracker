@@ -26,6 +26,33 @@ def _safe_float_env(var_name: str, default: float) -> float:
         raise ValueError(f"La variabile d'ambiente {var_name} deve essere un numero decimale, ricevuto: '{value}'")
 
 
+def _validate_number(value, field: str, cast, minimum, maximum=None):
+    """Converte e valida un valore numerico della configurazione.
+
+    Un valore non numerico (es. "60" come stringa) o fuori range non deve
+    far crashare il programma a runtime con un TypeError poco chiaro: qui
+    viene convertito quando possibile, altrimenti si solleva un ValueError
+    esplicito con il nome del campo.
+    """
+    if isinstance(value, bool):
+        raise ValueError(f"'{field}' deve essere un numero, ricevuto: {value!r}")
+    if cast is int and isinstance(value, float) and not value.is_integer():
+        raise ValueError(f"'{field}' deve essere un numero intero, ricevuto: {value!r}")
+    try:
+        number = cast(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"'{field}' deve essere un numero, ricevuto: {value!r}")
+
+    if number < minimum or (maximum is not None and number > maximum):
+        if maximum is not None:
+            raise ValueError(
+                f"'{field}' deve essere compreso tra {minimum} e {maximum}, ricevuto: {value!r}"
+            )
+        raise ValueError(f"'{field}' deve essere almeno {minimum}, ricevuto: {value!r}")
+
+    return number
+
+
 def _get_env_config() -> Dict[str, Any]:
     """Restituisce una configurazione minima dai valori d'ambiente, se presenti."""
     telegram_env = {
@@ -122,6 +149,19 @@ def load_config(config_path: str = "config.json") -> Dict[str, Any]:
     config.setdefault("discount_threshold", 70)
     config.setdefault("price_cache_minutes", 60)
     config.setdefault("products", [])
+
+    # Normalizza e valida i parametri numerici anche quando arrivano dal file
+    # JSON: senza questo controllo un valore come "60" (stringa) farebbe
+    # crashare il programma a runtime con un TypeError non chiaro.
+    config["check_interval_minutes"] = _validate_number(
+        config["check_interval_minutes"], "check_interval_minutes", int, 1
+    )
+    config["price_cache_minutes"] = _validate_number(
+        config["price_cache_minutes"], "price_cache_minutes", int, 0
+    )
+    config["discount_threshold"] = _validate_number(
+        config["discount_threshold"], "discount_threshold", float, 0, 100
+    )
 
     # Chiave API ScraperAPI (opzionale). Priorità alla variabile d'ambiente
     # SCRAPERAPI_API_KEY (mai committata), fallback alla sezione "scraperapi"

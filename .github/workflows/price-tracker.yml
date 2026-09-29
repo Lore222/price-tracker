@@ -15,6 +15,10 @@ concurrency:
   group: price-tracker
   cancel-in-progress: true
 
+# Permessi minimi per il GITHUB_TOKEN: al workflow serve solo leggere il codice.
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -22,6 +26,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -40,10 +46,18 @@ jobs:
   check-prices:
     runs-on: ubuntu-latest
     needs: test
+    # 'actions: write' serve per scaricare/caricare l'artifact dello stato
+    # (dedup degli alert): senza questo permesso l'upload dell'artifact
+    # verrebbe rifiutato dal workflow con 'permissions' ristretti.
+    permissions:
+      contents: read
+      actions: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v6

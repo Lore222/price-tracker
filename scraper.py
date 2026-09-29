@@ -21,6 +21,20 @@ HEADERS = {
 SCRAPERAPI_ENDPOINT = "https://api.scraperapi.com/"
 
 
+def _redact_secrets(text, *secrets) -> str:
+    """Sostituisce i segreti presenti in un testo con '***'.
+
+    Le eccezioni di 'requests' includono l'URL completo della richiesta, che
+    per ScraperAPI contiene 'api_key=...': senza questa redazione la chiave
+    finirebbe nei log e nei messaggi di errore (anche inviati su Telegram).
+    """
+    text = str(text)
+    for secret in secrets:
+        if secret:
+            text = text.replace(str(secret), "***")
+    return text
+
+
 def _get_via_scraperapi(url: str, api_key: str, timeout: int = 30):
     """Recupera la pagina passando dal proxy ScraperAPI per evitare blocchi anti-bot.
 
@@ -184,6 +198,11 @@ def fetch_product_price(
             response.raise_for_status()
             break
         except requests.RequestException as e:
+            # La risposta eventualmente già assegnata appartiene a una richiesta
+            # FALLITA (es. HTTP 500/503): azzerarla evita di trattare l'HTML
+            # della pagina di errore come se fosse la pagina prodotto, usando
+            # prezzi/spedizioni casuali come prezzo reale.
+            response = None
             last_error = e
             if attempt < max_retries - 1:
                 # Exponential backoff con jitter
@@ -191,12 +210,14 @@ def fetch_product_price(
                 jitter = random.uniform(0, 1.0)
                 delay = round(base_delay + jitter, 2)
                 logger.warning("Tentativo %d fallito (%s), riprovo tra %ss...",
-                               attempt + 1, str(e), delay)
+                               attempt + 1, _redact_secrets(e, scraperapi_key), delay)
                 time.sleep(delay)
                 continue
 
     if response is None:
-        return {"error": f"Errore di rete: {str(last_error)}"}
+        # L'errore viene anche mostrato nei log e nel riepilogo Telegram:
+        # la chiave API va rimossa prima di propagarlo.
+        return {"error": f"Errore di rete: {_redact_secrets(last_error, scraperapi_key)}"}
 
     price_selectors = _normalize_selectors(price_selector) + [
         "#corePriceDisplay_desktop_feature_div span.a-price-whole",

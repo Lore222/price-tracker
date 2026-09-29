@@ -1,6 +1,8 @@
 import unittest
 from unittest import mock
 
+import requests
+
 from scraper import (
     _calculate_discount,
     _extract_prices_from_html_fallback,
@@ -319,6 +321,54 @@ class ScraperApiIntegrationTests(unittest.TestCase):
             self.assertIn("error", data)
             self.assertIn("anti-bot", data["error"])
             self.assertNotIn("current_price", data)
+
+    def test_fetch_product_price_returns_error_on_persistent_http_error(self):
+        """Regressione: se ogni tentativo fallisce con un errore HTTP (es. 503),
+        il bot deve restituire un errore e NON il prezzo trovato nell'HTML della
+        pagina di errore, che genererebbe alert con prezzi falsi."""
+        html = '<html><body><span class="a-price-whole">999</span></body></html>'
+
+        def failing_raise_for_status():
+            raise requests.HTTPError("503 Server Error")
+
+        with mock.patch("scraper.requests.get") as mocked_get, \
+                mock.patch("scraper.time.sleep") as mocked_sleep:
+            mocked_get.return_value = mock.Mock(
+                text=html, raise_for_status=failing_raise_for_status
+            )
+            data = fetch_product_price(
+                "https://www.amazon.it/dp/EXAMPLE",
+                "span.a-price-whole",
+                "span.a-text-price span.a-offscreen",
+            )
+
+        self.assertEqual(mocked_get.call_count, 3)  # tutti i retry eseguiti
+        self.assertEqual(mocked_sleep.call_count, 2)  # nessun sleep inutile dopo l'ultimo
+        self.assertIn("error", data)
+        self.assertIn("Errore di rete", data["error"])
+        self.assertNotIn("current_price", data)
+
+    def test_fetch_product_price_redacts_api_key_from_errors_and_logs(self):
+        """Sicurezza: la chiave ScraperAPI non deve comparire né nei log né
+        nell'errore restituito (che finisce anche nei messaggi Telegram)."""
+        secret = "super-secret-api-key-123"
+        network_error = requests.ConnectionError(
+            "Max retries exceeded with url: /?api_key=" + secret
+        )
+
+        with mock.patch("scraper.requests.get", side_effect=network_error), \
+                mock.patch("scraper.time.sleep"), \
+                self.assertLogs("scraper", level="WARNING") as captured:
+            data = fetch_product_price(
+                "https://www.amazon.it/dp/EXAMPLE",
+                "span.a-price-whole",
+                None,
+                scraperapi_key=secret,
+            )
+
+        self.assertIn("error", data)
+        self.assertNotIn(secret, data["error"])
+        self.assertNotIn(secret, "\n".join(captured.output))
 
 
 class PriceCacheTests(unittest.TestCase):
