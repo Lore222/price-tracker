@@ -90,13 +90,23 @@ def _is_anti_bot_page(html: str) -> bool:
     text = html.lower()
     markers = [
         "continuare a fare acquisti",
+        "inserisci i caratteri qui sotto",
         "to discuss automated access",
         "verify you are human",
+        "verify that you are a human",
+        "we need to confirm you are not a robot",
+        "we need to make sure you are not a robot",
+        "complete the security check",
+        "security check",
         "robot check",
         "captcha",
         "access denied",
         "sorry, we just need to make sure you're not a robot",
         "something went wrong on our end",
+        "api-key",
+        "verifica che sei una persona",
+        "verifica di sicurezza",
+        "ci serve verificare che tu non sia un bot",
     ]
     return any(marker in text for marker in markers)
 
@@ -171,6 +181,33 @@ def extract_price_data_from_html(html: str, price_selectors, original_price_sele
     }
 
 
+def _is_placeholder_price(price: Optional[float], html: Optional[str] = None) -> bool:
+    """Rifiuta prezzi finti standard di pagine anti-bot (es. €10,00 / €5,99).
+
+    Questi valori sono spesso presenti come "dati di riempimento" nelle pagine di
+    verifica Amazon, quindi devono essere scartati anche quando il testo di
+    controllo anti-bot non contiene esattamente uno dei marcatori già noti.
+    """
+    if price is None:
+        return False
+    suspicious = price <= 10.0
+    if not suspicious:
+        return False
+    if html is None:
+        return True
+    lower_html = html.lower()
+    anti_bot_terms = [
+        "verify",
+        "captcha",
+        "robot",
+        "security check",
+        "continua a fare acquisti",
+        "verifica",
+        "bot",
+    ]
+    return any(term in lower_html for term in anti_bot_terms)
+
+
 def fetch_product_price(
     url: str,
     price_selector,
@@ -242,6 +279,9 @@ def fetch_product_price(
 
     if data["current_price"] is None:
         return {"error": "Prezzo attuale non trovato con il selettore specificato"}
+
+    if _is_placeholder_price(data["current_price"], response.text):
+        return {"error": "Amazon ha restituito una pagina di verifica/anti-bot; il prezzo non è disponibile via scraping."}
 
     return data
 

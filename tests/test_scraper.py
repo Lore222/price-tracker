@@ -294,6 +294,14 @@ class ScraperApiIntegrationTests(unittest.TestCase):
         )
         self.assertTrue(_is_anti_bot_page(html))
 
+    def test_is_anti_bot_page_detects_security_check_variant(self):
+        """Rileva varianti di testo anti-bot che non erano coperte dai marker vecchi."""
+        html = (
+            "<html><body>We need to confirm you are not a robot. "
+            "Complete the security check. <span>€10.0</span></body></html>"
+        )
+        self.assertTrue(_is_anti_bot_page(html))
+
     def test_is_anti_bot_page_does_not_flag_normal_page(self):
         """Una pagina prodotto normale non deve essere rilevata come anti-bot."""
         html = '<html><body><span class="a-price-whole">649,00</span></body></html>'
