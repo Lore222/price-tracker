@@ -3,10 +3,8 @@ name: Price Tracker
 on:
   workflow_dispatch:
   schedule:
-    # RIDUZIONE TEMPORANEA per non esaurire i crediti prima del reset (13/10).
-    # 1 controllo al giorno a mezzogiorno UTC (14:00/13:00 italiane).
-    # DAL 13/10 ripristinare i 3 controlli: '0 9,15,21 * * *'
-    - cron: '0 12 * * *'
+    # 3 controlli al giorno in fascia diurna: 9, 15 e 21 UTC.
+    - cron: '0 9,15,21 * * *'
 
 # Impedisce che più run si sovrappongano: se parte una nuova esecuzione
 # mentre una è già in corso, quella in corso viene annullata. Evita
