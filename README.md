@@ -185,19 +185,27 @@ price-tracker/
 
 ## 💳 Consumo crediti ScraperAPI (piano: 1000/mese)
 
-Ogni run consuma **1 credito per ogni prodotto** in `config.json` (8 con la configurazione di default).
+> ⚠️ **Attenzione al costo per dominio**: ScraperAPI **non** addebita 1 credito per richiesta su tutti i siti. Per la categoria **E-Commerce (Amazon, Walmart, eBay) ogni richiesta costa 5 crediti** ([documentazione ufficiale](https://docs.scraperapi.com/getting-started/quick-start/credits-and-requests-costs)). I prodotti in `config.json` sono su Amazon/eBay → **ogni prodotto controllato costa 5 crediti**. I retry di rete (max 3 tentativi) aggiungono crediti extra.
 
-| Voce | Run/giorno | Crediti/giorno |
-|------|------------|----------------|
-| `Price Tracker` (9, 15, 21 UTC) | 3 | 3 × 8 = 24 |
-| `Daily Price Summary` (18 UTC) | 1 | 8 |
-| **Totale** | | **~32/giorno** |
+| Voce | Run/giorno | Controlli/giorno | Crediti/giorno |
+|------|------------|------------------|----------------|
+| `Price Tracker` (9, 15, 21 UTC) | 3 | 3 × 8 = 24 | 24 × 5 = 120 |
+| `Daily Price Summary` (18 UTC) | 1 | 8 | 8 × 5 = 40 |
+| **Totale** | 4 | **32** | **~160** (+ retry) |
 
-→ **~32 × 30 = ~960 crediti/mese**, cioè il **96% dei 1000 crediti disponibili**: ci si rientra, ma resta un margine di soli ~40 crediti (meno di un giorno e mezzo di run).
+→ **~160 × 30 = ~4800 crediti/mese**: con un piano da **1000 crediti/mese** (200 controlli prodotto/mese) questa cadenza **non è sostenibile**, basta per ~6 giorni.
 
-> ⚠️ **Con questo budget non c'è spazio per altri prodotti**: ogni prodotto aggiunto costa ~120 crediti/mese e farebbe sforare il limite. Anche una run manuale (dispatch a mano) costa 8 crediti.
->
-> 💡 **Per avere margine, riduci i prodotti** in `config.json`: ogni prodotto tolto risparmia 4 crediti/giorno (3 controlli + 1 riepilogo), cioè ~120/mese. Togliendo 1 prodotto si scende a **~840 crediti/mese** con ~160 crediti di riserva.
+**Configurazioni sostenibili con 1000 crediti/mese (max 200 controlli prodotto/mese):**
+
+| Configurazione | Controlli/mese | Crediti/mese | Esito |
+|---|---|---|---|
+| 8 prodotti, 1 run/giorno | 240 | 1200 | ❌ sforamento |
+| 8 prodotti, 1 run ogni 2 giorni | 120 | 600 | ✅ margine per retry |
+| 4 prodotti, 1 run/giorno | 120 | 600 | ✅ |
+| 4 prodotti, 2 run/giorno | 240 | 1200 | ❌ sforamento |
+| 2 prodotti, 3 run/giorno + riepilogo | 320 | 1600 | ❌ sforamento |
+
+> 💡 **Ogni prodotto tolto da `config.json` risparmia 5 crediti per run**: con 4 run/giorno (3 controlli + 1 riepilogo) un prodotto in meno fa risparmiare 20 crediti/giorno, cioè **~600/mese**.
 
 ## 🔒 Privacy
 
