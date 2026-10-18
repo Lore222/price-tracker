@@ -183,7 +183,7 @@ price-tracker/
 - **Telegram**: il bot token è un segreto, non condividerlo pubblicamente. Il file `config.json` è tracciato sul repository: non inserire al suo interno token o chiavi API, usa le variabili d'ambiente o i GitHub secrets
 - **GitHub Actions**: i cron job usano il fuso orario UTC. Il riepilogo delle 20:00 italiane corrisponde a `0 18 * * *` (18:00 UTC). In estate (CEST) l'Italia è UTC+2, in inverno (CET) UTC+1 — regola il cron se necessario. I controlli del `Price Tracker` (9, 15, 21 UTC) cadono in Italia a ~10/11, 16/17 e 22/23 locali, sempre in fascia diurna.
 
-## 💳 Consumo crediti ScraperAPI (piano: 5000/mese)
+## 💳 Consumo crediti ScraperAPI (piano: 1000/mese)
 
 Ogni run consuma **1 credito per ogni prodotto** in `config.json` (8 con la configurazione di default).
 
@@ -193,9 +193,11 @@ Ogni run consuma **1 credito per ogni prodotto** in `config.json` (8 con la conf
 | `Daily Price Summary` (18 UTC) | 1 | 8 |
 | **Totale** | | **~32/giorno** |
 
-→ **~32 × 30 = ~960 crediti/mese**, circa il 19% dei 5000 crediti disponibili: il margine è ampio, anche per aumentare la frequenza o aggiungere prodotti.
+→ **~32 × 30 = ~960 crediti/mese**, cioè il **96% dei 1000 crediti disponibili**: ci si rientra, ma resta un margine di soli ~40 crediti (meno di un giorno e mezzo di run).
 
-> 💡 Se hai bisogno di più respiro, riduci il numero di prodotti: ogni prodotto tolto risparmia 4 crediti/giorno (3 controlli + 1 riepilogo), cioè ~120/mese.
+> ⚠️ **Con questo budget non c'è spazio per altri prodotti**: ogni prodotto aggiunto costa ~120 crediti/mese e farebbe sforare il limite. Anche una run manuale (dispatch a mano) costa 8 crediti.
+>
+> 💡 **Per avere margine, riduci i prodotti** in `config.json`: ogni prodotto tolto risparmia 4 crediti/giorno (3 controlli + 1 riepilogo), cioè ~120/mese. Togliendo 1 prodotto si scende a **~840 crediti/mese** con ~160 crediti di riserva.
 
 ## 🔒 Privacy
 
