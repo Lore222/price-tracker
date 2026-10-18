@@ -350,8 +350,8 @@ class ScraperApiIntegrationTests(unittest.TestCase):
                 "span.a-text-price span.a-offscreen",
             )
 
-        self.assertEqual(mocked_get.call_count, 3)  # tutti i retry eseguiti
-        self.assertEqual(mocked_sleep.call_count, 2)  # nessun sleep inutile dopo l'ultimo
+        self.assertEqual(mocked_get.call_count, 2)  # tutti i retry eseguiti
+        self.assertEqual(mocked_sleep.call_count, 1)  # nessun sleep inutile dopo l'ultimo
         self.assertIn("error", data)
         self.assertIn("Errore di rete", data["error"])
         self.assertNotIn("current_price", data)

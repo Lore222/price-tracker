@@ -185,7 +185,16 @@ price-tracker/
 
 ## 💳 Consumo crediti ScraperAPI (piano: 1000/mese)
 
-> ⚠️ **Attenzione al costo per dominio**: ScraperAPI **non** addebita 1 credito per richiesta su tutti i siti. Per la categoria **E-Commerce (Amazon, Walmart, eBay) ogni richiesta costa 5 crediti** ([documentazione ufficiale](https://docs.scraperapi.com/getting-started/quick-start/credits-and-requests-costs)). I prodotti in `config.json` sono su Amazon/eBay → **ogni prodotto controllato costa 5 crediti**. I retry di rete (max 3 tentativi) aggiungono crediti extra.
+> ⚠️ **Costi reali misurati** (report ScraperAPI, ottobre 2026): la verifica `credit_cost = (successful + cancelled) × 5` torna **esatta** per ogni giorno.
+>
+> | Dominio | Costo per richiesta |
+> |---|---|
+> | **amazon.it** | **5 crediti** (categoria E-Commerce con scraping dedicato) |
+> | **ebay.it** | **1 credito** |
+>
+> ⚠️ Le richieste **cancelled** (il client si disconnette per timeout) vengono **comunque addebitate** a 5 crediti, e ogni retry successivo costa altri 5. Nel solo ottobre 2026 i cancelled sono stati 27 → **135 crediti sprecati** (16% del totale).
+>
+> Per questo il codice usa **timeout 40s** (non 15) e **max 2 tentativi**: con 15s le pagine lente di Amazon producevano fino a 15 cancelled al giorno, ognuno dei quali pagava due volte (timeout + retry).
 
 | Voce | Run/giorno | Controlli/giorno | Crediti/giorno |
 |------|------------|------------------|----------------|

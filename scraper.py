@@ -213,7 +213,12 @@ def fetch_product_price(
     price_selector,
     original_price_selector,
     scraperapi_key: Optional[str] = None,
-    timeout: int = 15,
+    # 40s e non 15: ScraperAPI addebita comunque le richieste "cancelled" dal
+    # client (timeout) a 5 crediti l'una su Amazon/eBay, e ogni retry costa un
+    # altro credito. Con 15s le pagine lente producevano fino a 15 cancelled
+    # al giorno (135 crediti sprecati nel solo ottobre 2026). 40s resta ben
+    # sotto i 70s oltre i quali ScraperAPI interrompe la richiesta da sola.
+    timeout: int = 40,
 ) -> Dict:
     """Recupera prezzo attuale e prezzo originale da una pagina prodotto.
 
@@ -223,7 +228,11 @@ def fetch_product_price(
     """
     response = None
     last_error = None
-    max_retries = 3
+    # 2 tentativi e non 3: ogni retry verso Amazon/eBay costa 5 crediti
+    # ScraperAPI. Con il timeout a 40s la maggior parte delle richieste
+    # completi al primo tentativo, quindi un terzo tentativo sprecherebbe
+    # crediti senza migliorare l'affidabilità in modo proporzionato.
+    max_retries = 2
     retry_delay = 2
 
     for attempt in range(max_retries):
