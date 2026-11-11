@@ -1,12 +1,12 @@
 # 🛒 Price Tracker - Monitoraggio Offerte E-commerce
 
 Programma Python che monitora i prezzi su vari siti e-commerce e invia messaggi Telegram:
-- **Alert periodici**: in locale con l'intervallo configurato; su GitHub Actions, una run ogni due giorni
+- **Alert periodici**: in locale con l'intervallo configurato; su GitHub Actions, una run al giorno
 - **Riepilogo giornaliero**: alle 20:00 in modalità `--loop`; il workflow GitHub Actions è disponibile solo su avvio manuale
 
 ## ✨ Funzionalità
 
-- 🔍 Controllo automatico dei prezzi; su GitHub Actions una run ogni due giorni alle 12 UTC
+- 🔍 Controllo automatico dei prezzi; su GitHub Actions una run al giorno alle 12 UTC
 - 📨 Invio messaggi Telegram con le offerte trovate (solo se sconto ≥ soglia)
 - 🗓️ Riepilogo prezzi alle 20:00 nel loop locale; il workflow GitHub Actions è manuale e non schedulato
 - 🎯 Soglia sconto configurabile (default: 70%)
@@ -142,10 +142,10 @@ Il progetto include due workflow GitHub Actions che funzionano senza bisogno di 
 
 | Workflow | Schedule (cron UTC) | Orari Italia | Funzione |
 |----------|----------|----------|----------|
-| `Price Tracker` | ogni due giorni: `0 12 */2 * *` | 13:00 CET / 14:00 CEST | Controlla i prezzi e invia alert Telegram solo se sconto ≥ soglia |
+| `Price Tracker` | ogni giorno: `0 12 * * *` | 13:00 CET / 14:00 CEST | Controlla i prezzi e invia alert Telegram solo se sconto ≥ soglia |
 | `Daily Price Summary` | manuale (`workflow_dispatch`) | – | Riepilogo di tutti i prezzi, anche senza sconto |
 
-> 💳 La cadenza è ridotta per rispettare il limite ScraperAPI di 1000 crediti per periodo, che si azzera il giorno 13. Il cron `*/2` esegue nei giorni dispari del mese; la distanza tra run può quindi variare al cambio del mese.
+> 💳 Con i 6 prodotti attuali, una run giornaliera usa circa 900–930 crediti per periodo di 30–31 giorni, prima di retry e avvii manuali. Il limite ScraperAPI si azzera il giorno 13; il riepilogo automatico resta disattivato per mantenere margine.
 >
 > 🌙 **Sospensione notturna**: i controlli sono in fascia diurna e non vengono eseguiti nella notte italiana (00:00–08:00).
 >
@@ -173,7 +173,7 @@ price-tracker/
 ├── state_store.py             # Persistenza stato (dedup notifiche) in state.json
 ├── requirements.txt           # Dipendenze Python
 └── .github/workflows/
-    ├── price-tracker.yml      # Workflow ogni due giorni (alert sconti)
+    ├── price-tracker.yml      # Workflow giornaliero (alert sconti)
     └── daily-summary.yml      # Riepilogo manuale, non schedulato
 ```
 
@@ -198,7 +198,7 @@ price-tracker/
 >
 > Per questo il codice usa **timeout 40s** (non 15) e **max 2 tentativi**: con 15s le pagine lente di Amazon producevano fino a 15 cancelled al giorno, ognuno dei quali pagava due volte (timeout + retry).
 
-I 6 prodotti attualmente in `config.json` puntano tutti ad Amazon: una run costa quindi circa **30 crediti** senza retry. Con `0 12 */2 * *` si effettuano circa 15 run in 30 giorni o 16 in 31 giorni: circa **450–480 crediti**, lasciando margine per i retry. Le esecuzioni manuali e le richieste annullate possono aumentare il consumo; controlla il contatore ScraperAPI e mantieni il riepilogo automatico disattivato.
+I 6 prodotti attualmente in `config.json` puntano tutti ad Amazon: una run costa quindi circa **30 crediti** senza retry. Con `0 12 * * *` si effettuano 30 run in 30 giorni o 31 in 31 giorni: circa **900–930 crediti**. Restano 70 crediti di margine nel periodo più lungo; retry, richieste annullate ed esecuzioni manuali possono consumarli, quindi controlla il contatore ScraperAPI e mantieni il riepilogo automatico disattivato.
 
 > 💡 Per ridurre ulteriormente i consumi, diminuisci il numero di prodotti monitorati o aumenta l'intervallo tra le run.
 
