@@ -3,12 +3,10 @@ name: Price Tracker
 on:
   workflow_dispatch:
   schedule:
-    # 3 controlli al giorno in fascia diurna: 9, 15 e 21 UTC.
-    - cron: '0 9,15,21 * * *'
+    # Un controllo ogni due giorni a mezzogiorno UTC (13:00 CET / 14:00 CEST).
+    - cron: '0 12 */2 * *'
 
-# Impedisce che più run si sovrappongano: se parte una nuova esecuzione
-# mentre una è già in corso, quella in corso viene annullata. Evita
-# chiamate API duplicate (ogni run consuma 1 credito ScraperAPI per prodotto).
+# Impedisce run simultanee; l'annullamento non rimborsa le chiamate API già effettuate.
 concurrency:
   group: price-tracker
   cancel-in-progress: true

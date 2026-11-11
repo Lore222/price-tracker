@@ -2,9 +2,8 @@ name: Daily Price Summary
 
 on:
   workflow_dispatch:
-  schedule:
-    # Riepilogo giornaliero alle 18 UTC (20:00 italiane).
-    - cron: '0 18 * * *'
+  # Il riepilogo automatico resta sospeso per rispettare il budget mensile.
+  # Riattivare solo dopo aver verificato i crediti disponibili.
 
 # Impedisce che run sovrapposti duplichino le chiamate API.
 concurrency:

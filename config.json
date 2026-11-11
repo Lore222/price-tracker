@@ -11,20 +11,8 @@
   },
   "products": [
     {
-      "name": "Lefant M5 Pro",
-      "url": "https://www.amazon.it/dp/B0FXX6XRQ6/ref=sspa_dk_detail_2?pd_rd_i=B0FXX6XRQ6&pd_rd_w=4UQAX&content-id=amzn1.sym.068850c3-7e44-4eab-89d5-5cc710ff229b&pf_rd_p=068850c3-7e44-4eab-89d5-5cc710ff229b&pf_rd_r=G25ZGQDWAFY1C527BYJE&pd_rd_wg=0RCGE&pd_rd_r=acac7c17-7a34-4cb9-b113-e881d3ec7198&aref=WNppAqmzi3&sp_csd=d2lkZ2V0TmFtZT1zcF9kZXRhaWwy&th=1",
-      "selector_price": "span.a-price-whole",
-      "selector_original_price": "span.a-text-price span.a-offscreen"
-    },
-    {
       "name": "Dreame L40 Ultra AE",
       "url": "https://www.amazon.it/dp/B0GQBX475S",
-      "selector_price": "span.a-price-whole",
-      "selector_original_price": "span.a-text-price span.a-offscreen"
-    },
-    {
-      "name": "Dreame L50",
-      "url": "https://www.amazon.it/dp/B0GD78Z9JT",
       "selector_price": "span.a-price-whole",
       "selector_original_price": "span.a-text-price span.a-offscreen"
     },
